@@ -1,4 +1,26 @@
+# ---------------------------------------------------------------------
+# flake8 configuration
+#
+# This file configures linting rules used locally and in GitHub Actions.
+#
+# Tips:
+# - Use '# noqa' to ignore a rule on a specific line.
+# - Prefer '# noqa: <error-code>' to disable only a specific check.
+#   Example:  # noqa: E501  (ignore line length warning)
+# - Try to fix issues instead of disabling them where possible.
+#
+# Common error codes:
+# E501 : line too long
+# F401 : imported but unused
+# F841 : local variable assigned but unused
+# ---------------------------------------------------------------------
+
 [flake8]
+
+# Maximum allowed characters per line.
+max-line-length = 120
+
+# Files/directories that should not be linted.
 exclude =
   migrations,
   __pycache__,
