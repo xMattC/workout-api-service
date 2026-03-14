@@ -1,19 +1,30 @@
-# from django.conf import settings
+# Core Django model utilities
 from django.db import models
+
 from django.contrib.auth.models import (
-    AbstractBaseUser,
-    BaseUserManager,
-    PermissionsMixin,
+    AbstractBaseUser,  # Provides password hashing and authentication features
+    BaseUserManager,  # Provides helper methods for creating users
+    PermissionsMixin,  # Adds permission-related fields (groups, is_superuser, etc.)
 )
 
 
 class UserManager(BaseUserManager):
-    """Manager for users."""
+    """Custom manager for the User model.
+
+    The manager defines how User objects are created. Django calls these methods when creating users via code,
+    management commands, or tests.
+    """
 
     def create_user(self, email, password=None, **extra_fields):
-        """Create, save and return a new user."""
+        """
+        Create and return a regular user.
+
+        The email address is required and used as the login identifier.
+        The password is hashed using Django's built-in password system before being stored in the database.
+        """
         if not email:
-            raise ValueError('User must have an email address.')
+            raise ValueError("User must have an email address.")
+
         user = self.model(email=self.normalize_email(email), **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -21,8 +32,13 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, email, password):
-        """Create and return a new superuser."""
+        """Create and return a superuser.
+
+        A superuser has full administrative permissions and access to the Django admin interface.
+        """
         user = self.create_user(email, password)
+
+        # Grant admin site access and full permissions
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
@@ -31,12 +47,14 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    """User in the system."""
-    email = models.EmailField(max_length=255, unique=True)
-    name = models.CharField(max_length=255)
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
+    """Custom user model for the project.
 
-    objects = UserManager()
+    This replaces Django's default username-based user model with an email-based authentication system.
+    """
 
-    USERNAME_FIELD = 'email'
+    email = models.EmailField(max_length=255, unique=True)  # Primary login identifier
+    name = models.CharField(max_length=255)  # Display name for the user
+    is_active = models.BooleanField(default=True)  # Determines whether the account is active
+    is_staff = models.BooleanField(default=False)  # Allows access to the Django admin interface
+    objects = UserManager()  # Attach the custom manager to the model
+    USERNAME_FIELD = "email"  # Attach the custom manager to the model
