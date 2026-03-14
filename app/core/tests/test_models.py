@@ -1,9 +1,6 @@
-"""
-Tests for models
-"""
-
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+
 
 class ModelTests(TestCase):
     """Tests for models"""
@@ -15,7 +12,7 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_user(
             email=email,
             password=password,
-        ) # type: ignore
+        )  # type: ignore
 
         self.assertEqual(user.email, email)
         self.assertTrue(user.check_password(password))
@@ -42,7 +39,7 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_superuser(
             'test@example.com',
             'test123',
-        ) # type: ignore
+        )  # type: ignore
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
