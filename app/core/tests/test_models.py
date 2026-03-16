@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from core import models
 
 class ModelTests(TestCase):
     """Tests for models"""
@@ -12,7 +13,7 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_user(
             email=email,
             password=password,
-        )  # type: ignore
+        )
 
         self.assertEqual(user.email, email)
         self.assertTrue(user.check_password(password))
@@ -39,7 +40,21 @@ class ModelTests(TestCase):
         user = get_user_model().objects.create_superuser(
             'test@example.com',
             'test123',
-        )  # type: ignore
+        )
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_create_workout(self):
+        """Test if creating a workout is successful."""
+        user = get_user_model().objects.create_user(
+            'test@example.com',
+            'testpass123',
+        )
+        workout = models.Workout.objects.create(
+            user=user,
+            title='Sample workout name',
+            time_minutes=60,
+        )
+
+        self.assertEqual(str(workout), workout.title) # should return the title of the workout when converted to string
