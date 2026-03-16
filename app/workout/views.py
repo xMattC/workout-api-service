@@ -1,6 +1,7 @@
 from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import JSONParser
 
 # Create your views here.
 from core.models import Workout
@@ -14,6 +15,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     queryset = Workout.objects.all()
     authentication_classes = (TokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+    parser_classes = (JSONParser,)
 
     def get_queryset(self) -> Workout:
         """Retrieve workouts for authenticated user."""
