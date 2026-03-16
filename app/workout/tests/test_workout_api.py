@@ -83,3 +83,17 @@ class PrivateWorkoutApiTests(TestCase):
 
         serializer = WorkoutDetailSerializer(workout)
         self.assertEqual(res.data, serializer.data)
+
+
+    def test_create_workout(self):
+        """Test creating a workout."""
+        payload = {
+            'title': 'Sample workout',
+            'duration_minutes': 30,
+        }
+        res = self.client.post(RECIPES_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        workout = Workout.objects.get(id=res.data['id'])
+        for key in payload.keys():
+            self.assertEqual(payload[key], getattr(workout, key))
