@@ -14,4 +14,5 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
 class WorkoutDetailSerializer(WorkoutSerializer):
     """Serializer for workout detail view."""
+
     pass

@@ -104,7 +104,6 @@ class PrivateWorkoutApiTests(TestCase):
 
     def test_partial_update(self):
         """Test partial update of a workout."""
-        original_link = "https://example.com/workout.pdf"
         workout = create_workout(
             user=self.user,
             title="Sample workout title",
