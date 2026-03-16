@@ -40,7 +40,7 @@ The core processing pipeline:
 
 1.  An HTTP request arrives from a client.
 2.  Django routes the request using the root URL configuration.
-3.  The request is dispatched to the user application router**.
+3.  The request is dispatched to the user application router.
 4.  A Django REST Framework view handles the request.
 5.  A serializer validates and converts incoming data.
 6.  The custom user model persists the data via the Django ORM.
@@ -57,11 +57,11 @@ application router: `path("api/user/", include("user.urls"))`
 
 The user router (`user/urls.py`) maps specific endpoints to views.
 
-  Endpoint              Method              View
-  --------------------- ------------------- -------------------
-  `/api/user/create/`   POST                `CreateUserView`
-  `/api/user/token/`    POST                `CreateTokenView`
-  `/api/user/me/`       GET / PUT / PATCH   `ManageUserView`
+  |Endpoint              |Method              |View
+  |--------------------- |------------------- |-------------------
+  |`/api/user/create/`   |POST                |`CreateUserView`
+  |`/api/user/token/`    |POST                |`CreateTokenView`
+  |`/api/user/me/`       |GET / PUT / PATCH   |`ManageUserView`
 
 ------------------------------------------------------------------------
 
