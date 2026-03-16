@@ -66,7 +66,6 @@ class Workout(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     duration_minutes = models.IntegerField()  # TODO: Temporary field — will later be derived from related exercises
-    link = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return self.title

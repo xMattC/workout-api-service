@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -60,11 +58,13 @@ class PrivateWorkoutApiTests(TestCase):
     def test_workout_list_limited_to_user(self):
         """Test list of workouts is limited to authenticated user."""
         other_user = get_user_model().objects.create_user("other@example.com", "password123")
-        workout1 = create_workout(user=other_user)
-        workout2 = create_workout(user=self.user)
+        create_workout(user=other_user)
+        workout = create_workout(user=self.user)
 
         res = self.client.get(WORKOUTS_URL)
 
+        serializer = WorkoutSerializer(workout)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
-        self.assertNotIn(workout1, res.data)
-        self.assertIn(workout2, res.data)
+        self.assertEqual(res.data[0], serializer.data)
