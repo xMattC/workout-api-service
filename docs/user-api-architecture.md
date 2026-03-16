@@ -1,7 +1,7 @@
 # User API Architecture
 
-This document describes the architecture and request flow for the **User
-API** within the Django REST backend.
+This document describes the architecture and request flow for the User
+API within the Django REST backend.
 
 The user module currently provides endpoints for:
 
@@ -40,11 +40,11 @@ The core processing pipeline:
 
 1.  An HTTP request arrives from a client.
 2.  Django routes the request using the root URL configuration.
-3.  The request is dispatched to the **user application router**.
-4.  A **Django REST Framework view** handles the request.
-5.  A **serializer** validates and converts incoming data.
-6.  The **custom user model** persists the data via the Django ORM.
-7.  The data is stored in **PostgreSQL**.
+3.  The request is dispatched to the user application router**.
+4.  A Django REST Framework view handles the request.
+5.  A serializer validates and converts incoming data.
+6.  The custom user model persists the data via the Django ORM.
+7.  The data is stored in PostgreSQL.
 
 ------------------------------------------------------------------------
 
@@ -67,7 +67,7 @@ The user router (`user/urls.py`) maps specific endpoints to views.
 
 # View Layer
 
-The API uses **Django REST Framework generic views**, which provide
+The API uses Django REST Framework generic views, which provide
 built-in request handling.
 
 ### CreateUserView
@@ -108,7 +108,7 @@ Authentication is handled using: `TokenAuthentication`
 
 # Serializer Layer
 
-Serializers perform **validation and translation** between JSON and
+Serializers perform validation and translation between JSON and
 Django models.
 
 The main serializer used by the user API is:
@@ -126,24 +126,24 @@ Responsibilities include:
 
 # Model Layer
 
-The project uses a **custom user model** configured in Django settings:
+The project uses a custom user model configured in Django settings:
 
 `AUTH_USER_MODEL = "core.User"`
 
 This model:
 
 -   extends `AbstractBaseUser`
--   uses **email as the username**
+-   uses email as the username
 -   integrates with Django authentication
 -   stores user credentials securely using hashed passwords
 
-User creation logic is handled by a **custom user manager**.
+User creation logic is handled by a custom user manager.
 
 ------------------------------------------------------------------------
 
 # Database
 
-All user data is persisted via the **Django ORM** to a PostgreSQL
+All user data is persisted via the Django ORM to a PostgreSQL
 database.
 
 Database configuration is defined in:
