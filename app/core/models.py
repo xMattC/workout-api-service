@@ -1,4 +1,4 @@
-# Core Django model utilities
+from django.conf import settings
 from django.db import models
 
 from django.contrib.auth.models import (
@@ -58,3 +58,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)  # Allows access to the Django admin interface
     objects = UserManager()  # Attach the custom manager to the model
     USERNAME_FIELD = "email"  # Attach the custom manager to the model
+
+
+class Workout(models.Model):
+    """Workout object."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    duration_minutes = models.IntegerField()  # TODO: Temporary field — will later be derived from related exercises
+    link = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return self.title
