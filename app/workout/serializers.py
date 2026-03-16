@@ -10,3 +10,10 @@ class WorkoutSerializer(serializers.ModelSerializer):
         model = Workout
         fields = ["id", "title", "duration_minutes"]
         read_only_fields = ["id"]
+
+
+class WorkoutDetailSerializer(WorkoutSerializer):
+    """Serializer for recipe detail view."""
+
+    class Meta(WorkoutSerializer.Meta):
+        fields = WorkoutSerializer.Meta.fields + ["description"]
