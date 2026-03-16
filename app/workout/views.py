@@ -25,3 +25,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
             return serializers.WorkoutDetailSerializer
 
         return self.serializer_class
+
+    def perform_create(self, serializer):
+        """Create a new workout."""
+        serializer.save(user=self.request.user)
