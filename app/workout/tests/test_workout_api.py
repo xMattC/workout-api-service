@@ -7,7 +7,7 @@ from rest_framework.test import APIClient
 
 from core.models import Workout
 
-from workout.serializers import WorkoutSerializer
+from workout.serializers import WorkoutSerializer, WorkoutDetailSerializer
 
 
 WORKOUTS_URL = reverse("workout:workout-list")
@@ -20,6 +20,11 @@ def create_workout(user, **params):
 
     workout = Workout.objects.create(user=user, **defaults)
     return workout
+
+
+def detail_url(workout_id):
+    """Create and return a workout detail URL."""
+    return reverse("workout:workout-detail", args=[workout_id])
 
 
 class PublicWorkoutAPITests(TestCase):
@@ -68,3 +73,13 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0], serializer.data)
+
+    def test_get_workout_detail(self):
+        """Test get workout detail."""
+        workout = create_workout(user=self.user)
+
+        url = detail_url(workout.id)
+        res = self.client.get(url)
+
+        serializer = WorkoutDetailSerializer(workout)
+        self.assertEqual(res.data, serializer.data)
