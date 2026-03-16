@@ -27,6 +27,11 @@ def detail_url(workout_id):
     return reverse("workout:workout-detail", args=[workout_id])
 
 
+def create_user(**params):
+    """Create and return a new user."""
+    return get_user_model().objects.create_user(**params)
+
+
 class PublicWorkoutAPITests(TestCase):
     """Test unauthenticated API requests."""
 
@@ -62,7 +67,7 @@ class PrivateWorkoutApiTests(TestCase):
 
     def test_workout_list_limited_to_user(self):
         """Test list of workouts is limited to authenticated user."""
-        other_user = get_user_model().objects.create_user("other@example.com", "password123")
+        other_user = create_user(email="user2@example.com", password="test123")
         create_workout(user=other_user)
         workout = create_workout(user=self.user)
 
@@ -84,16 +89,87 @@ class PrivateWorkoutApiTests(TestCase):
         serializer = WorkoutDetailSerializer(workout)
         self.assertEqual(res.data, serializer.data)
 
-
     def test_create_workout(self):
         """Test creating a workout."""
         payload = {
-            'title': 'Sample workout',
-            'duration_minutes': 30,
+            "title": "Sample workout",
+            "duration_minutes": 30,
         }
-        res = self.client.post(RECIPES_URL, payload)
+        res = self.client.post(WORKOUTS_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        workout = Workout.objects.get(id=res.data['id'])
+        workout = Workout.objects.get(id=res.data["id"])
         for key in payload.keys():
             self.assertEqual(payload[key], getattr(workout, key))
+
+    def test_partial_update(self):
+        """Test partial update of a workout."""
+        original_link = "https://example.com/workout.pdf"
+        workout = create_workout(
+            user=self.user,
+            title="Sample workout title",
+        )
+
+        payload = {"title": "New workout title"}
+        url = detail_url(workout.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        workout.refresh_from_db()
+        self.assertEqual(workout.title, payload["title"])
+        self.assertEqual(workout.user, self.user)
+
+    def test_full_update(self):
+        """Test full update of workout."""
+        workout = create_workout(
+            user=self.user,
+            title="Sample workout title",
+            description="Sample workout description.",
+        )
+
+        payload = {
+            "title": "New workout title",
+            "description": "New workout description",
+            "duration_minutes": 10,
+        }
+        url = detail_url(workout.id)
+        res = self.client.put(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        workout.refresh_from_db()
+        for k, v in payload.items():
+            self.assertEqual(getattr(workout, k), v)
+        self.assertEqual(workout.user, self.user)
+
+    def test_update_user_returns_error(self):
+        """Test changing the workout user results in an error."""
+        new_user = create_user(email="user2@example.com", password="test123")
+        workout = create_workout(user=self.user)
+
+        payload = {"user": new_user.id}
+        url = detail_url(workout.id)
+        self.client.patch(url, payload)
+
+        workout.refresh_from_db()
+        self.assertEqual(workout.user, self.user)
+
+    def test_delete_workout(self):
+        """Test deleting a workout successful."""
+        workout = create_workout(user=self.user)
+
+        url = detail_url(workout.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Workout.objects.filter(id=workout.id).exists())
+
+    def test_workout_other_users_workout_error(self):
+        """Test trying to delete another users workout gives error."""
+        new_user = create_user(email="user2@example.com", password="test123")
+        workout = create_workout(user=new_user)
+
+        url = detail_url(workout.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(Workout.objects.filter(id=workout.id).exists())
