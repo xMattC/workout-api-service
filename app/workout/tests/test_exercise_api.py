@@ -13,6 +13,11 @@ from workout.serializers import ExerciseSerializer
 EXERCISES_URL = reverse("workout:exercise-list")
 
 
+def detail_url(exercise_id):
+    """Create and return an exercise detail URL."""
+    return reverse("workout:exercise-detail", args=[exercise_id])
+
+
 def create_user(email="user@example.com", password="testpass123"):
     """Create and return user."""
     return get_user_model().objects.create_user(email=email, password=password)
@@ -63,3 +68,15 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]["name"], exercise.name)
         self.assertEqual(res.data[0]["id"], exercise.id)
+
+    def test_update_exercise(self):
+        """Test updating an exercise."""
+        exercise = Exercise.objects.create(user=self.user, name="Push Ups")
+
+        payload = {"name": "Bench Press"}
+        url = detail_url(exercise.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        exercise.refresh_from_db()
+        self.assertEqual(exercise.name, payload["name"])

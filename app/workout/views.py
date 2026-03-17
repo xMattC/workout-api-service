@@ -44,9 +44,7 @@ class TagViewSet(mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.ListM
         return self.queryset.filter(user=self.request.user).order_by("-name")
 
 
-class ExerciseViewSet(
-    mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class ExerciseViewSet(mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """Manage exercises in the database."""
 
     serializer_class = serializers.ExerciseSerializer
