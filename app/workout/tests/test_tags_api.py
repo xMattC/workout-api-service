@@ -13,6 +13,7 @@ from workout.serializers import TagSerializer
 TAGS_URL = reverse("workout:tag-list")
 WORKOUTS_URL = reverse("workout:workout-list")
 
+
 def detail_url(tag_id):
     """Create and return a tag detail url."""
     return reverse("workout:tag-detail", args=[tag_id])
@@ -92,38 +93,36 @@ class PrivateTagsApiTests(TestCase):
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
 
-
-
     def test_create_workout_with_new_tags(self):
         """Test creating a workout with new tags."""
         payload = {
-            'title': 'Monday Workout',
-            'duration_minutes': 45,
-            'tags': [{'name': 'Back'}, {'name': 'Biceps'}],
+            "title": "Monday Workout",
+            "duration_minutes": 45,
+            "tags": [{"name": "Back"}, {"name": "Biceps"}],
         }
-        res = self.client.post(WORKOUTS_URL, payload, format='json')
+        res = self.client.post(WORKOUTS_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         workouts = Workout.objects.filter(user=self.user)
         self.assertEqual(workouts.count(), 1)
         workout = workouts[0]
         self.assertEqual(workout.tags.count(), 2)
-        for tag in payload['tags']:
+        for tag in payload["tags"]:
             exists = workout.tags.filter(
-                name=tag['name'],
+                name=tag["name"],
                 user=self.user,
             ).exists()
             self.assertTrue(exists)
 
     def test_create_workout_with_existing_tags(self):
         """Test creating a workout with existing tag."""
-        tag_tricepts = Tag.objects.create(user=self.user, name='Triceps')
+        tag_tricepts = Tag.objects.create(user=self.user, name="Triceps")
         payload = {
-            'title': 'Monday Workout',
-            'duration_minutes': 45,
-            'tags': [{'name': 'Triceps'}, {'name': 'Biceps'}],
+            "title": "Monday Workout",
+            "duration_minutes": 45,
+            "tags": [{"name": "Triceps"}, {"name": "Biceps"}],
         }
-        res = self.client.post(WORKOUTS_URL, payload, format='json')
+        res = self.client.post(WORKOUTS_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
         workouts = Workout.objects.filter(user=self.user)
@@ -131,9 +130,9 @@ class PrivateTagsApiTests(TestCase):
         workout = workouts[0]
         self.assertEqual(workout.tags.count(), 2)
         self.assertIn(tag_tricepts, workout.tags.all())
-        for tag in payload['tags']:
+        for tag in payload["tags"]:
             exists = workout.tags.filter(
-                name=tag['name'],
+                name=tag["name"],
                 user=self.user,
             ).exists()
             self.assertTrue(exists)
