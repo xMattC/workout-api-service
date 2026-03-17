@@ -15,7 +15,7 @@ TAGS_URL = reverse("workout:tag-list")
 
 def detail_url(tag_id):
     """Create and return a tag detail url."""
-    return reverse("recipe:tag-detail", args=[tag_id])
+    return reverse("workout:tag-detail", args=[tag_id])
 
 
 def create_user(email="user@example.com", password="testpass123"):
