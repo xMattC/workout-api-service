@@ -1,6 +1,15 @@
 from rest_framework import serializers
 
-from core.models import Workout, Tag
+from core.models import Workout, Tag, Exercise
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    """Serializer for ingredients."""
+
+    class Meta:
+        model = Exercise
+        fields = ["id", "name"]
+        read_only_fields = ["id"]
 
 
 class TagSerializer(serializers.ModelSerializer):
