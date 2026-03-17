@@ -56,5 +56,3 @@ class WorkoutDetailSerializer(WorkoutSerializer):
 
     class Meta(WorkoutSerializer.Meta):
         fields = WorkoutSerializer.Meta.fields + ["description"]
-
-    # pass
