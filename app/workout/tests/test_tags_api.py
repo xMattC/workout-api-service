@@ -1,4 +1,3 @@
-
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -11,10 +10,10 @@ from core.models import Tag
 from workout.serializers import TagSerializer
 
 
-TAGS_URL = reverse('workout:tag-list')
+TAGS_URL = reverse("workout:tag-list")
 
 
-def create_user(email='user@example.com', password='testpass123'):
+def create_user(email="user@example.com", password="testpass123"):
     """Create and return a user."""
     return get_user_model().objects.create_user(email=email, password=password)
 
@@ -42,25 +41,25 @@ class PrivateTagsApiTests(TestCase):
 
     def test_retrieve_tags(self):
         """Test retrieving a list of tags."""
-        Tag.objects.create(user=self.user, name='Legs day')
-        Tag.objects.create(user=self.user, name='Upper Body')
+        Tag.objects.create(user=self.user, name="Legs day")
+        Tag.objects.create(user=self.user, name="Upper Body")
 
         res = self.client.get(TAGS_URL)
 
-        tags = Tag.objects.all().order_by('-name')
+        tags = Tag.objects.all().order_by("-name")
         serializer = TagSerializer(tags, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
     def test_tags_limited_to_user(self):
         """Test list of tags is limited to authenticated user."""
-        user2 = create_user(email='user2@example.com')
-        Tag.objects.create(user=user2, name='HIIT')
-        tag = Tag.objects.create(user=self.user, name='Cardio')
+        user2 = create_user(email="user2@example.com")
+        Tag.objects.create(user=user2, name="HIIT")
+        tag = Tag.objects.create(user=self.user, name="Cardio")
 
         res = self.client.get(TAGS_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]['name'], tag.name)
-        self.assertEqual(res.data[0]['id'], tag.id)
+        self.assertEqual(res.data[0]["name"], tag.name)
+        self.assertEqual(res.data[0]["id"], tag.id)
