@@ -16,7 +16,8 @@ class WorkoutDetailSerializer(WorkoutSerializer):
     """Serializer for workout detail view."""
 
     class Meta(WorkoutSerializer.Meta):
-        fields = WorkoutSerializer.Meta.fields + ['description']
+        fields = WorkoutSerializer.Meta.fields + ["description"]
+
     # pass
 
 
