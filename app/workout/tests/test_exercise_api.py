@@ -80,3 +80,14 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         exercise.refresh_from_db()
         self.assertEqual(exercise.name, payload["name"])
+
+    def test_delete_ingredient(self):
+        """Test deleting an ingredient."""
+        ingredient = Exercise.objects.create(user=self.user, name="Lettuce")
+
+        url = detail_url(ingredient.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        ingredients = Exercise.objects.filter(user=self.user)
+        self.assertFalse(ingredients.exists())
