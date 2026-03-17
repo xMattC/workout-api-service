@@ -117,11 +117,11 @@ class PrivateTagsApiTests(TestCase):
 
     def test_create_workout_with_existing_tags(self):
         """Test creating a workout with existing tag."""
-        tag_indian = Tag.objects.create(user=self.user, name='Indian')
+        tag_tricepts = Tag.objects.create(user=self.user, name='Triceps')
         payload = {
             'title': 'Monday Workout',
             'duration_minutes': 45,
-            'tags': [{'name': 'Back'}, {'name': 'Biceps'}],
+            'tags': [{'name': 'Triceps'}, {'name': 'Biceps'}],
         }
         res = self.client.post(WORKOUTS_URL, payload, format='json')
 
@@ -130,7 +130,7 @@ class PrivateTagsApiTests(TestCase):
         self.assertEqual(workouts.count(), 1)
         workout = workouts[0]
         self.assertEqual(workout.tags.count(), 2)
-        self.assertIn(tag_indian, workout.tags.all())
+        self.assertIn(tag_tricepts, workout.tags.all())
         for tag in payload['tags']:
             exists = workout.tags.filter(
                 name=tag['name'],

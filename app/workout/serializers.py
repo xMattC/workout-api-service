@@ -21,6 +21,19 @@ class WorkoutSerializer(serializers.ModelSerializer):
         fields = ["id", "title", "duration_minutes", "tags"]
         read_only_fields = ["id"]
 
+    def create(self, validated_data):
+        """Create a workout."""
+        tags = validated_data.pop("tags", [])
+        workout = Workout.objects.create(**validated_data)
+        auth_user = self.context["request"].user
+        for tag in tags:
+            tag_object, created = Tag.objects.get_or_create(
+                user=auth_user, **tag
+            )
+            workout.tags.add(tag_object)
+
+        return workout
+
 
 class WorkoutDetailSerializer(WorkoutSerializer):
     """Serializer for workout detail view."""
