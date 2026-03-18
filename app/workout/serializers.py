@@ -4,7 +4,7 @@ from core.models import Workout, Tag, Exercise
 
 
 class ExerciseSerializer(serializers.ModelSerializer):
-    """Serializer for ingredients."""
+    """Serializer for exercises."""
 
     class Meta:
         model = Exercise
@@ -25,10 +25,11 @@ class WorkoutSerializer(serializers.ModelSerializer):
     """Serializer for workouts."""
 
     tags = TagSerializer(many=True, required=False)
+    exercises = ExerciseSerializer(many=True, required=False)
 
     class Meta:
         model = Workout
-        fields = ["id", "title", "duration_minutes", "tags"]
+        fields = ["id", "title", "duration_minutes", "tags", "exercises"]
         read_only_fields = ["id"]
 
     def _get_or_create_tags(self, tags, workout):
@@ -38,11 +39,23 @@ class WorkoutSerializer(serializers.ModelSerializer):
             tag_object, created = Tag.objects.get_or_create(user=auth_user, **tag)
             workout.tags.add(tag_object)
 
+    def _get_or_create_exercises(self, exercises, recipe):
+        """Handle getting or creating exercises as needed."""
+        auth_user = self.context["request"].user
+        for exercise in exercises:
+            exercise_obj, created = Exercise.objects.get_or_create(
+                user=auth_user,
+                **exercise,
+            )
+            recipe.exercises.add(exercise_obj)
+
     def create(self, validated_data):
         """Create a workout."""
         tags = validated_data.pop("tags", [])
+        exercises = validated_data.pop("exercises", [])
         workout = Workout.objects.create(**validated_data)
         self._get_or_create_tags(tags, workout)
+        self._get_or_create_exercises(exercises, workout)
 
         return workout
 

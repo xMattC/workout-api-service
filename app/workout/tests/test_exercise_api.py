@@ -13,6 +13,7 @@ from workout.serializers import ExerciseSerializer
 EXERCISES_URL = reverse("workout:exercise-list")
 WORKOUTS_URL = reverse("workout:workout-list")
 
+
 def detail_url(exercise_id):
     """Create and return an exercise detail URL."""
     return reverse("workout:exercise-detail", args=[exercise_id])
@@ -95,44 +96,50 @@ class PrivateExercisesApiTests(TestCase):
     def test_create_workout_with_new_exercises(self):
         """Test creating a workout with new exercises."""
         payload = {
-            'title': '',
-            'duration_minutes': 60,
-            'exercisies': [{'name': 'Pull ups'}, {'name': 'Sit ups'}],
+            "title": "Circuit Training",
+            "duration_minutes": 60,
+            "exercises": [{"name": "Pull ups"}, {"name": "Sit ups"}],
         }
-        res = self.client.post(WORKOUTS_URL, payload, format='json')
-
+        res = self.client.post(WORKOUTS_URL, payload, format="json")
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
         workouts = Workout.objects.filter(user=self.user)
         self.assertEqual(workouts.count(), 1)
+
         workout = workouts[0]
         self.assertEqual(workout.exercises.count(), 2)
-        for exercise in payload['exercises']:
+
+        for exercise in payload["exercises"]:
             exists = workout.exercises.filter(
-                name=exercise['name'],
+                name=exercise["name"],
                 user=self.user,
             ).exists()
             self.assertTrue(exists)
 
-    # def test_create_workout_with_existing_exercise(self):
-    #     """Test creating a new workout with existing exercise."""
-    #     exercise = Exercise.objects.create(user=self.user, name='Lemon')
-    #     payload = {
-    #         'title': 'Vietnamese Soup',
-    #         'time_minutes': 25,
-    #         'price': '2.55',
-    #         'exercises': [{'name': 'Lemon'}, {'name': 'Fish Sauce'}],
-    #     }
-    #     res = self.client.post(WORKOUTS_URL, payload, format='json')
+    def test_create_workout_with_existing_exercise(self):
+        """Test creating a new workout with existing exercise."""
+        check_exercise = Exercise.objects.create(user=self.user, name="Pull ups")
+        payload = {
+            "title": "Circuit Training",
+            "duration_minutes": 60,
+            "exercises": [{"name": "Pull ups"}, {"name": "Sit ups"}],
+        }
+        res = self.client.post(WORKOUTS_URL, payload, format="json")
 
-    #     self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-    #     workouts = Workout.objects.filter(user=self.user)
-    #     self.assertEqual(workouts.count(), 1)
-    #     workout = workouts[0]
-    #     self.assertEqual(workout.exercises.count(), 2)
-    #     self.assertIn(exercise, workout.exercises.all())
-    #     for exercise in payload['exercises']:
-    #         exists = workout.exercises.filter(
-    #             name=exercise['name'],
-    #             user=self.user,
-    #         ).exists()
-    #         self.assertTrue(exists)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        workouts = Workout.objects.filter(user=self.user)
+        self.assertEqual(workouts.count(), 1)
+
+        workout = workouts[0]
+        self.assertEqual(workout.exercises.count(), 2)
+
+
+        self.assertIn(check_exercise, workout.exercises.all())
+
+        for exercise in payload["exercises"]:
+            exists = workout.exercises.filter(
+                name=exercise["name"],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)

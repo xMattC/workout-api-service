@@ -68,7 +68,7 @@ class Workout(models.Model):
     description = models.TextField(blank=True)  # Optional detailed description of the workout
     duration_minutes = models.IntegerField()  # TODO: Temporary field — will later be derived from related exercises
     tags = models.ManyToManyField("Tag")  # A W/O can have multiple tags. A Tag can be associated with multiple W/O.
-    exercisies = models.ManyToManyField("Exercise")
+    exercises = models.ManyToManyField("Exercise")
 
     def __str__(self):
         return self.title
