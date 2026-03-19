@@ -27,6 +27,7 @@ def detail_url(tag_id):
 # HELPERS
 # ---------------------------------------------------------------------
 
+
 def create_user(email="user@example.com", password="testpass123"):
     """Create and return a new user."""
     return get_user_model().objects.create_user(email=email, password=password)
@@ -35,6 +36,7 @@ def create_user(email="user@example.com", password="testpass123"):
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
 # ---------------------------------------------------------------------
+
 
 class PublicTagsApiTests(TestCase):
     """Test unauthenticated access to tag endpoints."""
@@ -52,6 +54,7 @@ class PublicTagsApiTests(TestCase):
 # ---------------------------------------------------------------------
 # PRIVATE API TESTS
 # ---------------------------------------------------------------------
+
 
 class PrivateTagsApiTests(TestCase):
     """Test authenticated interactions with the tag API."""

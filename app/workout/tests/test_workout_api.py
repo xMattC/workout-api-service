@@ -26,6 +26,7 @@ def detail_url(workout_id):
 # HELPERS
 # ---------------------------------------------------------------------
 
+
 def create_user(**params):
     """Create and return a new user."""
     return get_user_model().objects.create_user(**params)
@@ -44,6 +45,7 @@ def create_workout(user, **params):
 # PUBLIC API TESTS
 # ---------------------------------------------------------------------
 
+
 class PublicWorkoutAPITests(TestCase):
     """Test unauthenticated access to workout endpoints."""
 
@@ -59,6 +61,7 @@ class PublicWorkoutAPITests(TestCase):
 # ---------------------------------------------------------------------
 # PRIVATE API TESTS
 # ---------------------------------------------------------------------
+
 
 class PrivateWorkoutApiTests(TestCase):
     """Test authenticated interactions with the workout API."""
@@ -256,9 +259,7 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(workout.exercises.count(), 2)
 
         for exercise in payload["exercises"]:
-            self.assertTrue(
-                workout.exercises.filter(name=exercise["name"], user=self.user).exists()
-            )
+            self.assertTrue(workout.exercises.filter(name=exercise["name"], user=self.user).exists())
 
     def test_create_workout_with_existing_exercise(self):
         """Verify that existing exercises are reused (not duplicated) when creating a workout."""
