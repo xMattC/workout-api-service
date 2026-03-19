@@ -145,3 +145,12 @@ class WorkoutDetailSerializer(WorkoutSerializer):
 
     class Meta(WorkoutSerializer.Meta):
         fields = WorkoutSerializer.Meta.fields + ["description"]
+
+
+class WorkoutImageSerializer(serializers.ModelSerializer):
+    """Serializer for uploading images to workout."""
+
+    class Meta:
+        model = Workout
+        fields = ['id', 'image']
+        read_only_fields = ['id']
