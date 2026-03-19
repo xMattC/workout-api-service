@@ -7,6 +7,10 @@ from django.contrib.auth.models import (
     PermissionsMixin,  # Adds permission-related fields (groups, is_superuser, etc.)
 )
 
+def workout_image_file_path(instance, filename):
+    """Generate file path for new workout image."""
+    pass
+
 
 class UserManager(BaseUserManager):
     """Custom manager for the User model.

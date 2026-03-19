@@ -15,13 +15,12 @@ Including another URLconf
 """
 
 from django.http import HttpResponse
-from drf_spectacular.views import (
-    SpectacularAPIView,
-    SpectacularSwaggerView,
-)
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls.static import static
+from django.conf import settings
 
 urlpatterns = [
     path("", lambda request: HttpResponse("Home page")),
@@ -35,3 +34,8 @@ urlpatterns = [
     path("api/user/", include("user.urls")),
     path("api/workout/", include("workout.urls")),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
