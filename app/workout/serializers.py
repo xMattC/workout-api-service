@@ -144,7 +144,7 @@ class WorkoutDetailSerializer(WorkoutSerializer):
     """Extend workout serializer to include additional detail fields."""
 
     class Meta(WorkoutSerializer.Meta):
-        fields = WorkoutSerializer.Meta.fields + ["description"]
+        fields = WorkoutSerializer.Meta.fields + ["description", "image"]
 
 
 class WorkoutImageSerializer(serializers.ModelSerializer):
