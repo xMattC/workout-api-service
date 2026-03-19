@@ -1,14 +1,15 @@
-from rest_framework import viewsets, mixins
+from rest_framework import mixins, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-# Create your views here.
 from core.models import Workout, Tag, Exercise
 from workout import serializers
 
 
 class WorkoutViewSet(viewsets.ModelViewSet):
-    """View for manage workout APIs."""
+    """Manage workout API endpoints. Access is restricted to authenticated users, and all queryset results are limited
+    to objects owned by the current user.
+    """
 
     serializer_class = serializers.WorkoutDetailSerializer
     queryset = Workout.objects.all()
@@ -16,41 +17,65 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Retrieve workouts for authenticated user."""
+        """Return workouts for the authenticated user only. Results are ordered by descending ID so the most recently
+        created workouts appear first.
+        """
         return self.queryset.filter(user=self.request.user).order_by("-id")
 
     def get_serializer_class(self):
-        """Return the serializer class for request."""
+        """Return the appropriate serializer class for the current action.
+
+        Behaviour:
+        - Use the basic workout serializer for list views.
+        - Use the detail serializer for all other actions.
+        """
         if self.action == "list":
             return serializers.WorkoutSerializer
 
         return self.serializer_class
 
     def perform_create(self, serializer):
-        """Create a new workout."""
+        """Create a new workout owned by the authenticated user.
+        Automatically assigns the current user as the workout owner.
+        """
         serializer.save(user=self.request.user)
 
 
-class BaseAttrViewSet(mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
-    """Base viewset for TagViewSet and ExerciseViewSet."""
+class BaseAttrViewSet(
+    mixins.DestroyModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Base viewset for simple user-owned attribute models.Access is restricted to authenticated users, and all
+    queryset results are limited to objects owned by the current user.
+
+    Intended for reusable behaviour shared by:
+    - Tag viewsets
+    - Exercise viewsets
+    """
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Return objects for the current authenticated user only."""
+        """
+        Return objects belonging to the current authenticated user only.
+
+        Results are ordered by descending name.
+        """
         return self.queryset.filter(user=self.request.user).order_by("-name")
 
 
 class TagViewSet(BaseAttrViewSet):
-    """Manage tags in the database."""
+    """Manage tag API endpoints for the authenticated user."""
 
     serializer_class = serializers.TagSerializer
     queryset = Tag.objects.all()
 
 
 class ExerciseViewSet(BaseAttrViewSet):
-    """Manage exercises in the database."""
+    """Manage exercise API endpoints for the authenticated user."""
 
     serializer_class = serializers.ExerciseSerializer
     queryset = Exercise.objects.all()
