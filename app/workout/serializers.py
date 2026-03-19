@@ -152,5 +152,6 @@ class WorkoutImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workout
-        fields = ['id', 'image']
-        read_only_fields = ['id']
+        fields = ["id", "image"]
+        read_only_fields = ["id"]
+        extra_kwargs = {"image": {"required": "True"}}
