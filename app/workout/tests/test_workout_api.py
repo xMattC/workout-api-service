@@ -1,12 +1,14 @@
+import tempfile
+import os
+
+from PIL import Image
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import Workout, Tag, Exercise
-
 from workout.serializers import WorkoutSerializer, WorkoutDetailSerializer
 
 
@@ -20,6 +22,11 @@ WORKOUTS_URL = reverse("workout:workout-list")
 def detail_url(workout_id):
     """Create and return a workout detail URL."""
     return reverse("workout:workout-detail", args=[workout_id])
+
+
+def image_upload_url(workout_id):
+    """Create and return an image upload URL."""
+    return reverse("workout:workout-upload-image", args=[workout_id])
 
 
 # ---------------------------------------------------------------------
@@ -318,3 +325,45 @@ class PrivateWorkoutApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(workout.exercises.count(), 0)
+
+
+class ImageUploadTests(TestCase):
+    """Test workout image upload functionality."""
+
+    def setUp(self):
+        """Set up authenticated client and sample workout."""
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user("user@example.com", "password123")
+        self.client.force_authenticate(self.user)
+        self.workout = create_workout(user=self.user)
+
+    def tearDown(self):
+        """Clean up uploaded image files after each test."""
+        self.workout.image.delete()
+
+    def test_upload_image(self):
+        """Ensure a valid image can be uploaded and stored for a workout."""
+        url = image_upload_url(self.workout.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
+            img = Image.new("RGB", (10, 10))
+            img.save(image_file, format="JPEG")
+            image_file.seek(0)
+
+            payload = {"image": image_file}
+            res = self.client.post(url, payload, format="multipart")
+
+        self.workout.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("image", res.data)
+        self.assertTrue(os.path.exists(self.workout.image.path))
+
+    def test_upload_image_bad_request(self):
+        """Verify that uploading invalid image data returns a 400 error."""
+        url = image_upload_url(self.workout.id)
+
+        payload = {"image": "notanimage"}
+        res = self.client.post(url, payload, format="multipart")
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

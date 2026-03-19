@@ -1,3 +1,6 @@
+import os
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -8,6 +11,22 @@ from django.contrib.auth.models import (
 )
 
 
+# ---------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------
+
+
+def workout_image_file_path(instance, filename):
+    """Generate file path for new workout image."""
+    ext = os.path.splitext(filename)[1]
+    filename = f"{uuid.uuid4()}{ext}"
+
+    return os.path.join("uploads", "workout", filename)
+
+
+# ---------------------------------------------------------------------
+# MODELS
+# ---------------------------------------------------------------------
 class UserManager(BaseUserManager):
     """Custom manager for the User model.
 
@@ -69,6 +88,7 @@ class Workout(models.Model):
     duration_minutes = models.IntegerField()  # TODO: Temporary field — will later be derived from related exercises
     tags = models.ManyToManyField("Tag")  # A W/O can have multiple tags. A Tag can be associated with multiple W/O.
     exercises = models.ManyToManyField("Exercise")
+    image = models.ImageField(null=True, upload_to=workout_image_file_path)  # Optional image for the workout.
 
     def __str__(self):
         return self.title

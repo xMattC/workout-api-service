@@ -144,4 +144,14 @@ class WorkoutDetailSerializer(WorkoutSerializer):
     """Extend workout serializer to include additional detail fields."""
 
     class Meta(WorkoutSerializer.Meta):
-        fields = WorkoutSerializer.Meta.fields + ["description"]
+        fields = WorkoutSerializer.Meta.fields + ["description", "image"]
+
+
+class WorkoutImageSerializer(serializers.ModelSerializer):
+    """Serializer for uploading images to workout."""
+
+    class Meta:
+        model = Workout
+        fields = ["id", "image"]
+        read_only_fields = ["id"]
+        extra_kwargs = {"image": {"required": "True"}}
