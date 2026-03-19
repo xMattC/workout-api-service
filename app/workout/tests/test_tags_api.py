@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.test import TestCase
+from django.urls import reverse
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -10,55 +10,79 @@ from core.models import Workout, Tag
 from workout.serializers import TagSerializer
 
 
+# ---------------------------------------------------------------------
+# URLS
+# ---------------------------------------------------------------------
+
 TAGS_URL = reverse("workout:tag-list")
 WORKOUTS_URL = reverse("workout:workout-list")
 
 
 def detail_url(tag_id):
-    """Create and return a tag detail url."""
+    """Create and return a tag detail URL."""
     return reverse("workout:tag-detail", args=[tag_id])
 
 
+# ---------------------------------------------------------------------
+# HELPERS
+# ---------------------------------------------------------------------
+
+
 def create_user(email="user@example.com", password="testpass123"):
-    """Create and return a user."""
+    """Create and return a new user."""
     return get_user_model().objects.create_user(email=email, password=password)
 
 
+# ---------------------------------------------------------------------
+# PUBLIC API TESTS
+# ---------------------------------------------------------------------
+
+
 class PublicTagsApiTests(TestCase):
-    """Test unauthenticated API requests."""
+    """Test unauthenticated access to tag endpoints."""
 
     def setUp(self):
         self.client = APIClient()
 
     def test_auth_required(self):
-        """Test auth is required for retrieving tags."""
+        """Ensure authentication is required to access the tag list endpoint."""
         res = self.client.get(TAGS_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
+# ---------------------------------------------------------------------
+# PRIVATE API TESTS
+# ---------------------------------------------------------------------
+
+
 class PrivateTagsApiTests(TestCase):
-    """Test authenticated API requests."""
+    """Test authenticated interactions with the tag API."""
 
     def setUp(self):
         self.user = create_user()
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
+    # -----------------------------------------------------------------
+    # BASIC CRUD
+    # -----------------------------------------------------------------
+
     def test_retrieve_tags(self):
-        """Test retrieving a list of tags."""
+        """Verify that an authenticated user can retrieve a list of their tags."""
         Tag.objects.create(user=self.user, name="Legs day")
         Tag.objects.create(user=self.user, name="Upper Body")
 
         res = self.client.get(TAGS_URL)
 
-        tags = Tag.objects.all().order_by("-name")
+        tags = Tag.objects.filter(user=self.user).order_by("-name")
         serializer = TagSerializer(tags, many=True)
+
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
     def test_tags_limited_to_user(self):
-        """Test list of tags is limited to authenticated user."""
+        """Ensure the tag list endpoint returns only tags belonging to the authenticated user."""
         user2 = create_user(email="user2@example.com")
         Tag.objects.create(user=user2, name="HIIT")
         tag = Tag.objects.create(user=self.user, name="Cardio")
@@ -71,10 +95,10 @@ class PrivateTagsApiTests(TestCase):
         self.assertEqual(res.data[0]["id"], tag.id)
 
     def test_update_tag(self):
-        """Test updating a tag."""
+        """Verify that an authenticated user can update the name of their tag."""
         tag = Tag.objects.create(user=self.user, name="Monday Workout")
 
-        payload = {"name": "Tusday Workout"}
+        payload = {"name": "Tuesday Workout"}
         url = detail_url(tag.id)
         res = self.client.patch(url, payload)
 
@@ -83,7 +107,7 @@ class PrivateTagsApiTests(TestCase):
         self.assertEqual(tag.name, payload["name"])
 
     def test_delete_tag(self):
-        """Test deleting a tag."""
+        """Ensure an authenticated user can delete their own tag successfully."""
         tag = Tag.objects.create(user=self.user, name="300 Workout")
 
         url = detail_url(tag.id)
@@ -93,8 +117,12 @@ class PrivateTagsApiTests(TestCase):
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
 
+    # -----------------------------------------------------------------
+    # WORKOUT TAG RELATIONSHIP TESTS
+    # -----------------------------------------------------------------
+
     def test_create_workout_with_new_tags(self):
-        """Test creating a workout with new tags."""
+        """Ensure new tags are created and linked when provided during workout creation."""
         payload = {
             "title": "Monday Workout",
             "duration_minutes": 45,
@@ -103,10 +131,13 @@ class PrivateTagsApiTests(TestCase):
         res = self.client.post(WORKOUTS_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
         workouts = Workout.objects.filter(user=self.user)
         self.assertEqual(workouts.count(), 1)
+
         workout = workouts[0]
         self.assertEqual(workout.tags.count(), 2)
+
         for tag in payload["tags"]:
             exists = workout.tags.filter(
                 name=tag["name"],
@@ -115,8 +146,9 @@ class PrivateTagsApiTests(TestCase):
             self.assertTrue(exists)
 
     def test_create_workout_with_existing_tags(self):
-        """Test creating a workout with existing tag."""
-        tag_tricepts = Tag.objects.create(user=self.user, name="Triceps")
+        """Verify that existing tags are reused (not duplicated) when creating a workout."""
+        existing_tag = Tag.objects.create(user=self.user, name="Triceps")
+
         payload = {
             "title": "Monday Workout",
             "duration_minutes": 45,
@@ -125,11 +157,14 @@ class PrivateTagsApiTests(TestCase):
         res = self.client.post(WORKOUTS_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
         workouts = Workout.objects.filter(user=self.user)
         self.assertEqual(workouts.count(), 1)
+
         workout = workouts[0]
         self.assertEqual(workout.tags.count(), 2)
-        self.assertIn(tag_tricepts, workout.tags.all())
+        self.assertIn(existing_tag, workout.tags.all())
+
         for tag in payload["tags"]:
             exists = workout.tags.filter(
                 name=tag["name"],
