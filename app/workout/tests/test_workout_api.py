@@ -326,6 +326,50 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(workout.exercises.count(), 0)
 
+    def test_filter_by_tags(self):
+        """Test filitering by ensuring that only workouts associated with any of the specified tag IDs are returned."""
+        wo1 = create_workout(user=self.user, title="Monday - Chest and Back")
+        tag1 = Tag.objects.create(user=self.user, name="upper body")
+        wo1.tags.add(tag1)
+
+        wo2 = create_workout(user=self.user, title="Wednesday - Legs")
+        tag2 = Tag.objects.create(user=self.user, name="lower body")
+        wo2.tags.add(tag2)
+
+        wo3 = create_workout(user=self.user, title="Friday - Arms and Shoulders")
+
+        params = {"tags": f"{tag1.id},{tag2.id}"}
+        res = self.client.get(WORKOUTS_URL, params)
+
+        s1 = WorkoutSerializer(wo1)
+        s2 = WorkoutSerializer(wo2)
+        s3 = WorkoutSerializer(wo3)
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
+    def test_filter_by_exercise(self):
+        """Test filters by ensuring that only workouts that include any of the specified exercise IDs are returned."""
+        wo1 = create_workout(user=self.user, title="Monday - Chest and Back")
+        ex1 = Exercise.objects.create(user=self.user, name="Bench Press")
+        wo1.exercises.add(ex1)
+
+        wo2 = create_workout(user=self.user, title="Wednesday - Legs")
+        ex2 = Exercise.objects.create(user=self.user, name="Squats")
+        wo2.exercises.add(ex2)
+
+        wo3 = create_workout(user=self.user, title="Friday - Arms and Shoulders")
+
+        params = {"exercises": f"{ex1.id},{ex2.id}"}
+        res = self.client.get(WORKOUTS_URL, params)
+
+        s1 = WorkoutSerializer(wo1)
+        s2 = WorkoutSerializer(wo2)
+        s3 = WorkoutSerializer(wo3)
+        self.assertIn(s1.data, res.data)
+        self.assertIn(s2.data, res.data)
+        self.assertNotIn(s3.data, res.data)
+
 
 class ImageUploadTests(TestCase):
     """Test workout image upload functionality."""
