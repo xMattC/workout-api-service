@@ -1,3 +1,9 @@
+from drf_spectacular.utils import (
+    extend_schema_view,
+    extend_schema,
+    OpenApiParameter,
+    OpenApiTypes,
+)
 from rest_framework import mixins, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -8,6 +14,22 @@ from core.models import Workout, Tag, Exercise
 from workout import serializers
 
 
+@extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                'tags',
+                OpenApiTypes.STR,
+                description='Comma separated list of tag IDs to filter',
+            ),
+            OpenApiParameter(
+                'exercises',
+                OpenApiTypes.STR,
+                description='Comma separated list of exercise IDs to filter',
+            ),
+        ]
+    )
+)
 class WorkoutViewSet(viewsets.ModelViewSet):
     """Manage workout API endpoints. Access is restricted to authenticated users, and all queryset results are limited
     to objects owned by the current user.
@@ -21,7 +43,6 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     def _params_to_ints(self, qs):
         """Convert a comma-separated string of IDs to a list of integers."""
         return [int(str_id) for str_id in qs.split(",")]
-
 
     def get_queryset(self):
         """Return workouts for the authenticated user only."""
