@@ -117,6 +117,45 @@ class PrivateTagsApiTests(TestCase):
         tags = Tag.objects.filter(user=self.user)
         self.assertFalse(tags.exists())
 
+    def test_filter_tags_assigned_to_workouts(self):
+        """Test listing tags to those assigned to workouts."""
+        tag1 = Tag.objects.create(user=self.user, name="HIIT")
+        tag2 = Tag.objects.create(user=self.user, name="Weight Lifting")
+        workout = Workout.objects.create(
+            title="Crossfit",
+            duration_minutes=60,
+            user=self.user,
+        )
+        workout.tags.add(tag1)
+
+        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+
+        s1 = TagSerializer(tag1)
+        s2 = TagSerializer(tag2)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_tags_unique(self):
+        """Test filtered tags returns a unique list."""
+        tag = Tag.objects.create(user=self.user, name="Beginner program")
+        Tag.objects.create(user=self.user, name="Dinner")
+        workout1 = Workout.objects.create(
+            title="Full Body Workout",
+            duration_minutes=50,
+            user=self.user,
+        )
+        workout2 = Workout.objects.create(
+            title="Workout A - 2day split",
+            duration_minutes=30,
+            user=self.user,
+        )
+        workout1.tags.add(tag)
+        workout2.tags.add(tag)
+
+        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+
+        self.assertEqual(len(res.data), 1)
+
     # -----------------------------------------------------------------
     # WORKOUT TAG RELATIONSHIP TESTS
     # -----------------------------------------------------------------
