@@ -18,11 +18,26 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def _params_to_ints(self, qs):
+        """Convert a comma-separated string of IDs to a list of integers."""
+        return [int(str_id) for str_id in qs.split(",")]
+
+
     def get_queryset(self):
-        """Return workouts for the authenticated user only. Results are ordered by descending ID so the most recently
-        created workouts appear first.
-        """
-        return self.queryset.filter(user=self.request.user).order_by("-id")
+        """Return workouts for the authenticated user only."""
+        tags = self.request.query_params.get("tags")
+        exercises = self.request.query_params.get("exercises")
+        queryset = self.queryset
+
+        if tags:
+            tag_ids = self._params_to_ints(tags)
+            queryset = queryset.filter(tags__id__in=tag_ids)
+
+        if exercises:
+            exercise_ids = self._params_to_ints(exercises)
+            queryset = queryset.filter(exercises__id__in=exercise_ids)
+
+        return queryset.filter(user=self.request.user).order_by("-id").distinct()
 
     def get_serializer_class(self):
         """Return the appropriate serializer class for the current action.

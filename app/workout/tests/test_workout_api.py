@@ -326,6 +326,10 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(workout.exercises.count(), 0)
 
+    # -----------------------------------------------------------------
+    # WORKOUT FILTERING TESTS
+    # -----------------------------------------------------------------
+
     def test_filter_by_tags(self):
         """Test filitering by ensuring that only workouts associated with any of the specified tag IDs are returned."""
         wo1 = create_workout(user=self.user, title="Monday - Chest and Back")
