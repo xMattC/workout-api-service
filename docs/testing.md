@@ -1,81 +1,105 @@
-## Test categories
+# Testing Strategy and System Guarantees
 
-- auth tests
+This project uses automated tests to verify both isolated logic and full API behaviour.  
 
-- ownership tests
+The test suite ensures that the backend enforces strict access control, correct domain logic, and consistent API responses.
 
-- validation tests
+## Test Layers
 
-- API tests
+### Unit Tests
+Unit tests validate isolated components such as:
+- model methods and helpers
+- serializer validation and transformation logic
+- derived calculations (e.g. estimated duration)
 
-## Critical guarantees
+These tests ensure internal logic behaves correctly in isolation.
 
-- cross-user access blocked
+### API / System Tests
+API tests verify full request–response behaviour, including:
+- authentication
+- permissions and ownership
+- database interaction
+- response structure
 
-- invalid data rejected
+These tests simulate real client usage via HTTP requests.
 
-- nested responses correct
+## System Guarantees
 
-## How to run tests
+The following guarantees are enforced by application logic and verified by the automated test suite.
 
-- "Do not describe every test. Describe what is proven."
+### Authentication
 
+- Unauthenticated users cannot access protected endpoints (workouts, tags, exercises)
+- All private API endpoints require valid authentication
+- Authenticated users can access their own resources
 
-# SYSTMES TESTS: 
-## 1. Authentication system tests
+### Ownership and Access Control
 
-Prove:
+- Users can only access their own workouts
+- Users cannot retrieve another user’s workout (returns 404)
+- Users cannot update another user’s workout
+- Users cannot delete another user’s workout
 
-protected endpoints reject unauthenticated requests
+- Users can only access their own tags
+- Users cannot modify another user’s tags
 
-token auth works
+- Exercises and related entities are scoped to the authenticated user where applicable
+- Public resources (if present) are read-only and cannot be modified by users
 
-invalid token or missing token fails
+### Workout and Relationship Behaviour
 
-## 2. Ownership system tests
+- Workouts can be created, updated, and deleted by their owner
+- Updating a workout does not allow reassignment of ownership
+- Nested relationships (tags, exercises) are handled correctly during create and update
 
-Prove:
+#### Tags
+- New tags are created when provided in payloads
+- Existing tags are reused (not duplicated)
+- Updating tags replaces previous assignments
+- Providing an empty list clears all tags from a workout
 
-- user A cannot access user B’s workouts
+#### Exercises
+- New exercises are created when provided in payloads
+- Existing exercises are reused where possible
+- Updating exercises replaces previous assignments
+- Providing an empty list clears all exercises from a workout
 
-- user A cannot edit user B’s exercises
+### Validation and Data Integrity
 
-- user A cannot delete user B’s workout-exercise rows
+- Invalid payloads are rejected with appropriate error responses
+- Required fields must be provided when creating resources
+- Invalid relationship data is not persisted
+- Ownership constraints are enforced at all times
+- Attempts to modify restricted fields (e.g. workout owner) are ignored
 
-- These are among the most important tests in your project.
+### API Response Behaviour
 
-## 3. Validation system tests
+- List endpoints return only data belonging to the authenticated user
+- Detail endpoints return complete and accurate resource representations
+- Nested data (tags, exercises) is correctly serialized in responses
+- Responses match expected serializer output
 
-Prove:
+### Media Upload Handling
 
-- negative sets rejected
+- Valid image uploads are accepted and stored correctly
+- Uploaded images are associated with the correct workout
+- Invalid image payloads are rejected with a 400 response
+- File system state reflects successful uploads
 
-- zero reps rejected
+## Continuous Verification
 
-- duplicate order in same workout rejected
+- All tests are automated and run via the standard Django test runner
+- The full test suite is executed in CI on each change
+- This ensures that all guarantees remain enforced as the code evolves
 
-- invalid image rejected
+## Summary
 
-- These should go through the API, not only serializer unit tests.
+The test suite verifies that the system:
 
-## 4. API contract tests
+- enforces strict user-level data isolation
+- correctly manages relationships between workouts, tags, and exercises
+- rejects invalid or inconsistent data
+- provides reliable and predictable API responses
+- safely handles file uploads
 
-Prove:
-
-- workout detail returns nested workout exercises
-
-- filtered endpoint returns correct subset
-
-- paginated endpoint returns expected structure
-
-- This is about response usefulness and consistency.
-
-## 5. Media system tests
-
-Prove:
-
-- valid image upload succeeds
-
-- image is attached to the correct exercise
-
-- bad file is rejected
+These guarantees ensure the backend behaves as a consistent, secure, and production-ready API.
