@@ -5,7 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Exercise
+from core.models import Exercise, Workout
 
 from workout.serializers import ExerciseSerializer
 
@@ -115,3 +115,29 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
         exercises = Exercise.objects.filter(user=self.user)
         self.assertFalse(exercises.exists())
+
+    def test_filter_exercises_assigned_to_workouts(self):
+        """Test listing exercises to those assigned to workouts."""
+        ex1 = Exercise.objects.create(user=self.user, name="Lunges")
+        ex2 = Exercise.objects.create(user=self.user, name="Squats")
+        workout = Workout.objects.create(title="Leg Day", duration_minutes=55, user=self.user)
+        workout.exercises.add(ex1)
+
+        res = self.client.get(EXERCISES_URL, {"assigned_only": 1})
+
+        s1 = ExerciseSerializer(ex1)
+        s2 = ExerciseSerializer(ex2)
+        self.assertIn(s1.data, res.data)
+        self.assertNotIn(s2.data, res.data)
+
+    def test_filtered_exercises_unique(self):
+        """Test filtered exercises returns a unique list."""
+        ex = Exercise.objects.create(user=self.user, name="Squats")
+        wo1 = Workout.objects.create(title="Leg Day", duration_minutes=55, user=self.user)
+        wo2 = Workout.objects.create(title="Lower Body Workout", duration_minutes=55, user=self.user)
+        wo1.exercises.add(ex)
+        wo2.exercises.add(ex)
+
+        res = self.client.get(EXERCISES_URL, {"assigned_only": 1})
+
+        self.assertEqual(len(res.data), 1)
