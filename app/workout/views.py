@@ -31,9 +31,7 @@ from workout import serializers
     )
 )
 class WorkoutViewSet(viewsets.ModelViewSet):
-    """Manage workout API endpoints. Access is restricted to authenticated users, and all queryset results are limited
-    to objects owned by the current user.
-    """
+    """Manage workout API endpoints."""
 
     serializer_class = serializers.WorkoutDetailSerializer
     queryset = Workout.objects.all()
@@ -56,29 +54,21 @@ class WorkoutViewSet(viewsets.ModelViewSet):
 
         if exercises:
             exercise_ids = self._params_to_ints(exercises)
-            queryset = queryset.filter(exercises__id__in=exercise_ids)
+            queryset = queryset.filter(workout_exercises__exercise__id__in=exercise_ids)
 
         return queryset.filter(user=self.request.user).order_by("-id").distinct()
 
     def get_serializer_class(self):
-        """Return the appropriate serializer class for the current action.
-
-        Behaviour:
-        - Use the basic workout serializer for list views.
-        - Use the detail serializer for all other actions.
-        """
+        """Return the appropriate serializer class for the current action."""
         if self.action == "list":
             return serializers.WorkoutSerializer
-
         elif self.action == "upload_image":
             return serializers.WorkoutImageSerializer
 
         return self.serializer_class
 
     def perform_create(self, serializer):
-        """Create a new workout owned by the authenticated user.
-        Automatically assigns the current user as the workout owner.
-        """
+        """Create a new workout owned by the authenticated user."""
         serializer.save(user=self.request.user)
 
     @action(methods=["POST"], detail=True, url_path="upload-image")
@@ -112,30 +102,14 @@ class BaseAttrViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet,
 ):
-    """Base viewset for simple user-owned attribute models.Access is restricted to authenticated users, and all
-    queryset results are limited to objects owned by the current user.
-
-    Intended for reusable behaviour shared by:
-    - Tag viewsets
-    - Exercise viewsets
-    """
+    """Base viewset for simple user-owned attribute models."""
 
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """
-        Return objects belonging to the current authenticated user only.
-
-        Results are ordered by descending name.
-        """
-        assigned_only = bool(int(self.request.query_params.get("assigned_only", 0)))
-        queryset = self.queryset
-
-        if assigned_only:
-            queryset = queryset.filter(workout__isnull=False)
-
-        return queryset.filter(user=self.request.user).order_by("-name").distinct()
+        """Return objects belonging to the current authenticated user only."""
+        return self.queryset.filter(user=self.request.user).order_by("-name").distinct()
 
 
 class TagViewSet(BaseAttrViewSet):
@@ -144,9 +118,29 @@ class TagViewSet(BaseAttrViewSet):
     serializer_class = serializers.TagSerializer
     queryset = Tag.objects.all()
 
+    def get_queryset(self):
+        """Return tags for the authenticated user only."""
+        assigned_only = bool(int(self.request.query_params.get("assigned_only", 0)))
+        queryset = super().get_queryset()
+
+        if assigned_only:
+            queryset = queryset.filter(workout__isnull=False)
+
+        return queryset.distinct()
+
 
 class ExerciseViewSet(BaseAttrViewSet):
     """Manage exercise API endpoints for the authenticated user."""
 
     serializer_class = serializers.ExerciseSerializer
     queryset = Exercise.objects.all()
+
+    def get_queryset(self):
+        """Return exercises for the authenticated user only."""
+        assigned_only = bool(int(self.request.query_params.get("assigned_only", 0)))
+        queryset = super().get_queryset()
+
+        if assigned_only:
+            queryset = queryset.filter(workout_exercises__isnull=False)
+
+        return queryset.distinct()

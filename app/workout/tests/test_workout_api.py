@@ -8,7 +8,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Workout, Tag, Exercise
+from core.models import Workout, Tag, Exercise, WorkoutExercise
 from workout.serializers import WorkoutSerializer, WorkoutDetailSerializer
 
 
@@ -36,7 +36,8 @@ def image_upload_url(workout_id):
 
 def create_user(**params):
     """Create and return a new user."""
-    return get_user_model().objects.create_user(**params)
+    user = get_user_model().objects.create_user(**params)
+    return user
 
 
 def create_workout(user, **params):
@@ -46,6 +47,29 @@ def create_workout(user, **params):
 
     workout = Workout.objects.create(user=user, **defaults)
     return workout
+
+
+def create_exercise(user, **params):
+    """Create and return a sample exercise."""
+    defaults = {"name": "Sample exercise"}
+    defaults.update(params)
+
+    exercise = Exercise.objects.create(user=user, **defaults)
+    return exercise
+
+
+def create_workout_exercise(workout, exercise, **params):
+    """Create and return a sample workout exercise."""
+    defaults = {
+        "order": 1,
+        "sets": 3,
+        "reps": 10,
+        "rest_seconds": 60,
+    }
+    defaults.update(params)
+
+    workout_exercise = WorkoutExercise.objects.create(workout=workout, exercise=exercise, **defaults)
+    return workout_exercise
 
 
 # ---------------------------------------------------------------------
@@ -85,8 +109,6 @@ class PrivateWorkoutApiTests(TestCase):
     def test_retrieve_workouts(self):
         """Verify that an authenticated user can retrieve a list of their workouts."""
         create_workout(user=self.user)
-        create_workout(user=self.user)
-
         res = self.client.get(WORKOUTS_URL)
 
         workouts = Workout.objects.filter(user=self.user).order_by("-id")
@@ -251,80 +273,31 @@ class PrivateWorkoutApiTests(TestCase):
     # EXERCISE RELATIONSHIP TESTS
     # -----------------------------------------------------------------
 
-    def test_create_workout_with_new_exercises(self):
-        """Ensure new exercises are created and linked when provided during workout creation."""
-        payload = {
-            "title": "Circuit Training",
-            "duration_minutes": 60,
-            "exercises": [{"name": "Pull ups"}, {"name": "Sit ups"}],
-        }
-        res = self.client.post(WORKOUTS_URL, payload, format="json")
-
+    def test_create_workout_with_workout_exercises(self):
+        """Test creating a workout with nested workout_exercises creates related rows."""
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(workout.workout_exercises.count(), 1)
+        self.assertEqual(workout.workout_exercises.first().exercise, exercise)
 
-        workout = Workout.objects.get(user=self.user)
-        self.assertEqual(workout.exercises.count(), 2)
-
-        for exercise in payload["exercises"]:
-            self.assertTrue(workout.exercises.filter(name=exercise["name"], user=self.user).exists())
-
-    def test_create_workout_with_existing_exercise(self):
-        """Verify that existing exercises are reused (not duplicated) when creating a workout."""
-        existing_exercise = Exercise.objects.create(user=self.user, name="Pull ups")
-
-        payload = {
-            "title": "Circuit Training",
-            "duration_minutes": 60,
-            "exercises": [{"name": "Pull ups"}, {"name": "Sit ups"}],
-        }
-        res = self.client.post(WORKOUTS_URL, payload, format="json")
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-
-        workout = Workout.objects.get(user=self.user)
-        self.assertEqual(workout.exercises.count(), 2)
-        self.assertIn(existing_exercise, workout.exercises.all())
-
-    def test_create_exercise_on_update(self):
-        """Ensure new exercises are created and assigned when updating a workout."""
-        workout = create_workout(user=self.user)
-
-        payload = {"exercises": [{"name": "Pull ups"}]}
-        url = detail_url(workout.id)
-        res = self.client.patch(url, payload, format="json")
-
+    def test_update_workout_replaces_workout_exercises(self):
+        """Test updating a workout replaces existing workout_exercises."""
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        new_exercise = Exercise.objects.get(user=self.user, name="Pull ups")
-        self.assertIn(new_exercise, workout.exercises.all())
-
-    def test_update_workout_assign_exercise(self):
-        """Verify that updating exercises replaces existing assignments with the new set."""
-        existing_exercise = Exercise.objects.create(user=self.user, name="Deadlift")
-        workout = create_workout(user=self.user)
-        workout.exercises.add(existing_exercise)
-
-        new_exercise = Exercise.objects.create(user=self.user, name="Squats")
-
-        payload = {"exercises": [{"name": "Squats"}]}
-        url = detail_url(workout.id)
-        res = self.client.patch(url, payload, format="json")
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(new_exercise, workout.exercises.all())
-        self.assertNotIn(existing_exercise, workout.exercises.all())
+        self.assertEqual(workout.workout_exercises.count(), 1)
+        self.assertEqual(workout.workout_exercises.first().exercise, new_exercise)
 
     def test_clear_workout_exercises(self):
-        """Ensure that providing an empty exercise list removes all exercises from the workout."""
-        exercise = Exercise.objects.create(user=self.user, name="Bench Press")
-        workout = create_workout(user=self.user)
-        workout.exercises.add(exercise)
-
-        payload = {"exercises": []}
-        url = detail_url(workout.id)
-        res = self.client.patch(url, payload, format="json")
-
+        """Test that sending empty workout_exercises removes all from the workout."""
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(workout.exercises.count(), 0)
+        self.assertEqual(workout.workout_exercises.count(), 0)
+
+    def test_create_workout_invalid_exercise_id(self):
+        """Test error returned when assigning a non-existent exercise ID."""
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_update_workout_without_workout_exercises_keeps_existing(self):
+        """Test updating workout without workout_exercises does not remove existing ones."""
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(workout.workout_exercises.count(), 1)
 
     # -----------------------------------------------------------------
     # WORKOUT FILTERING TESTS
@@ -355,12 +328,12 @@ class PrivateWorkoutApiTests(TestCase):
     def test_filter_by_exercise(self):
         """Test filters by ensuring that only workouts that include any of the specified exercise IDs are returned."""
         wo1 = create_workout(user=self.user, title="Monday - Chest and Back")
-        ex1 = Exercise.objects.create(user=self.user, name="Bench Press")
-        wo1.exercises.add(ex1)
+        ex1 = create_exercise(user=self.user, name="Bench Press")
+        create_workout_exercise(workout=wo1, exercise=ex1)
 
         wo2 = create_workout(user=self.user, title="Wednesday - Legs")
-        ex2 = Exercise.objects.create(user=self.user, name="Squats")
-        wo2.exercises.add(ex2)
+        ex2 = create_exercise(user=self.user, name="Squats")
+        create_workout_exercise(workout=wo2, exercise=ex2)
 
         wo3 = create_workout(user=self.user, title="Friday - Arms and Shoulders")
 
