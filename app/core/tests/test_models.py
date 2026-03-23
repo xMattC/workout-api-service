@@ -66,6 +66,35 @@ class ModelTests(TestCase):
 
         self.assertEqual(str(workout), workout.title)
 
+
+    def test_create_workout_exercise(self):
+        """Verify workout exercise is created and string representation is correct."""
+        user = create_user()
+
+        workout = models.Workout.objects.create(
+            user=user,
+            title="Sample workout",
+            duration_minutes=60,
+        )
+
+        exercise = models.Exercise.objects.create(
+            user=user,
+            name="Push-up",
+        )
+
+        workout_exercise = models.WorkoutExercise.objects.create(
+            workout=workout,
+            exercise=exercise,
+            order=1,
+            sets=3,
+            reps=10,
+            rest_seconds=60,
+        )
+
+        expected_str = f"{workout.title} - {exercise.name} (1)"
+
+        self.assertEqual(str(workout_exercise), expected_str)
+
     def test_create_tag(self):
         """Verify that a tag is created successfully and string representation returns its name."""
         user = create_user()

@@ -6,7 +6,7 @@ from core import models
 
 
 class UserAdmin(BaseUserAdmin):
-    """Customise how the User model is displayed and managed in the Django admin.
+    """Customise how the User model is displayed and managed in the Django admin (i.e., the admin interface HTML).
 
     This extends Django's built-in UserAdmin so we inherit the default authentication behaviour while adapting the
     interface for our email-based custom user model.
