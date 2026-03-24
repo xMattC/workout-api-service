@@ -1,38 +1,11 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import Workout, Tag
-
 from workout.serializers import TagSerializer
-
-
-# ---------------------------------------------------------------------
-# URLS
-# ---------------------------------------------------------------------
-
-TAGS_URL = reverse("workout:tag-list")
-WORKOUTS_URL = reverse("workout:workout-list")
-
-
-def detail_url(tag_id):
-    """Create and return a tag detail URL."""
-    return reverse("workout:tag-detail", args=[tag_id])
-
-
-# ---------------------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------------------
-
-
-def create_user(email="user@example.com", password="testpass123"):
-    """Create and return a new user."""
-    return get_user_model().objects.create_user(email=email, password=password)
-
-
+from workout.tests.urls import TAGS_LIST_URL, WORKOUTS_LIST_URL, tag_detail_url
+from workout.tests.helpers import create_user
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
 # ---------------------------------------------------------------------
@@ -46,7 +19,7 @@ class PublicTagsApiTests(TestCase):
 
     def test_auth_required(self):
         """Ensure authentication is required to access the tag list endpoint."""
-        res = self.client.get(TAGS_URL)
+        res = self.client.get(TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -73,7 +46,7 @@ class PrivateTagsApiTests(TestCase):
         Tag.objects.create(user=self.user, name="Legs day")
         Tag.objects.create(user=self.user, name="Upper Body")
 
-        res = self.client.get(TAGS_URL)
+        res = self.client.get(TAGS_LIST_URL)
 
         tags = Tag.objects.filter(user=self.user).order_by("-name")
         serializer = TagSerializer(tags, many=True)
@@ -87,7 +60,7 @@ class PrivateTagsApiTests(TestCase):
         Tag.objects.create(user=user2, name="HIIT")
         tag = Tag.objects.create(user=self.user, name="Cardio")
 
-        res = self.client.get(TAGS_URL)
+        res = self.client.get(TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
@@ -99,7 +72,7 @@ class PrivateTagsApiTests(TestCase):
         tag = Tag.objects.create(user=self.user, name="Monday Workout")
 
         payload = {"name": "Tuesday Workout"}
-        url = detail_url(tag.id)
+        url = tag_detail_url(tag.id)
         res = self.client.patch(url, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -110,7 +83,7 @@ class PrivateTagsApiTests(TestCase):
         """Ensure an authenticated user can delete their own tag successfully."""
         tag = Tag.objects.create(user=self.user, name="300 Workout")
 
-        url = detail_url(tag.id)
+        url = tag_detail_url(tag.id)
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
@@ -128,7 +101,7 @@ class PrivateTagsApiTests(TestCase):
         )
         workout.tags.add(tag1)
 
-        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+        res = self.client.get(TAGS_LIST_URL, {"assigned_only": 1})
 
         s1 = TagSerializer(tag1)
         s2 = TagSerializer(tag2)
@@ -152,7 +125,7 @@ class PrivateTagsApiTests(TestCase):
         workout1.tags.add(tag)
         workout2.tags.add(tag)
 
-        res = self.client.get(TAGS_URL, {"assigned_only": 1})
+        res = self.client.get(TAGS_LIST_URL, {"assigned_only": 1})
 
         self.assertEqual(len(res.data), 1)
 
@@ -167,7 +140,7 @@ class PrivateTagsApiTests(TestCase):
             "duration_minutes": 45,
             "tags": [{"name": "Back"}, {"name": "Biceps"}],
         }
-        res = self.client.post(WORKOUTS_URL, payload, format="json")
+        res = self.client.post(WORKOUTS_LIST_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
@@ -193,7 +166,7 @@ class PrivateTagsApiTests(TestCase):
             "duration_minutes": 45,
             "tags": [{"name": "Triceps"}, {"name": "Biceps"}],
         }
-        res = self.client.post(WORKOUTS_URL, payload, format="json")
+        res = self.client.post(WORKOUTS_LIST_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 

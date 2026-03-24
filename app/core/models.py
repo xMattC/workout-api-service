@@ -35,8 +35,7 @@ class UserManager(BaseUserManager):
     """
 
     def create_user(self, email, password=None, **extra_fields):
-        """
-        Create and return a regular user.
+        """Create and return a regular user.
 
         The email address is required and used as the login identifier.
         The password is hashed using Django's built-in password system before being stored in the database.
@@ -80,22 +79,36 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Workout(models.Model):
-    """Workout object."""
+    """Entity model - Workout object."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)  # Name of the workout
-    description = models.TextField(blank=True)  # Optional detailed description of the workout
-    duration_minutes = models.IntegerField()  # TODO: Temporary field — will later be derived from related exercises
-    tags = models.ManyToManyField("Tag")  # A W/O can have multiple tags. A Tag can be associated with multiple W/O.
-    exercises = models.ManyToManyField("Exercise")
-    image = models.ImageField(null=True, upload_to=workout_image_file_path)  # Optional image for the workout.
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    duration_minutes = models.IntegerField()  # TODO: Temporary field — later derived from WorkoutExercise
+    tags = models.ManyToManyField("Tag")
+    image = models.ImageField(null=True, upload_to=workout_image_file_path)
 
     def __str__(self):
         return self.title
 
 
-class Tag(models.Model):
-    """Tag for filtering recipes."""
+class WorkoutExercise(models.Model):
+    """Join model - A single exercise entry inside a workout."""
+
+    workout = models.ForeignKey(Workout, on_delete=models.CASCADE, related_name="workout_exercises")
+    exercise = models.ForeignKey("Exercise", on_delete=models.CASCADE, related_name="workout_exercises")
+    order = models.PositiveIntegerField()
+    sets = models.PositiveIntegerField()
+    reps = models.PositiveIntegerField()
+    rest_seconds = models.PositiveIntegerField()
+    user_notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.workout.title} - {self.exercise.name} ({self.order})"
+
+
+class Exercise(models.Model):
+    """Entity model - Exercise for workouts."""
 
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -104,8 +117,8 @@ class Tag(models.Model):
         return self.name
 
 
-class Exercise(models.Model):
-    """Exercise for workouts."""
+class Tag(models.Model):
+    """Entity model - Tag for filtering workouts."""
 
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

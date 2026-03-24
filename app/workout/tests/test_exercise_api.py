@@ -1,36 +1,11 @@
-from django.contrib.auth import get_user_model
 from django.test import TestCase
-from django.urls import reverse
-
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Exercise, Workout
-
+from core.models import Exercise, Workout, WorkoutExercise
 from workout.serializers import ExerciseSerializer
-
-
-# ---------------------------------------------------------------------
-# URLS
-# ---------------------------------------------------------------------
-
-EXERCISES_URL = reverse("workout:exercise-list")
-
-
-def detail_url(exercise_id):
-    """Create and return an exercise detail URL."""
-    return reverse("workout:exercise-detail", args=[exercise_id])
-
-
-# ---------------------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------------------
-
-
-def create_user(email="user@example.com", password="testpass123"):
-    """Create and return a new user."""
-    return get_user_model().objects.create_user(email=email, password=password)
-
+from workout.tests.helpers import create_user, create_workout, create_workout_exercise
+from workout.tests.urls import EXERCISES_LIST_URL, exercise_detail_url
 
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
@@ -45,7 +20,7 @@ class PublicExercisesApiTests(TestCase):
 
     def test_auth_required(self):
         """Ensure authentication is required to access the exercise list endpoint."""
-        res = self.client.get(EXERCISES_URL)
+        res = self.client.get(EXERCISES_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -72,7 +47,7 @@ class PrivateExercisesApiTests(TestCase):
         Exercise.objects.create(user=self.user, name="Bench Press")
         Exercise.objects.create(user=self.user, name="Squats")
 
-        res = self.client.get(EXERCISES_URL)
+        res = self.client.get(EXERCISES_LIST_URL)
 
         exercises = Exercise.objects.filter(user=self.user).order_by("-name")
         serializer = ExerciseSerializer(exercises, many=True)
@@ -86,7 +61,7 @@ class PrivateExercisesApiTests(TestCase):
         Exercise.objects.create(user=user2, name="Salt")
         exercise = Exercise.objects.create(user=self.user, name="Deadlift")
 
-        res = self.client.get(EXERCISES_URL)
+        res = self.client.get(EXERCISES_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
@@ -98,7 +73,7 @@ class PrivateExercisesApiTests(TestCase):
         exercise = Exercise.objects.create(user=self.user, name="Push Ups")
 
         payload = {"name": "Bench Press"}
-        url = detail_url(exercise.id)
+        url = exercise_detail_url(exercise.id)
         res = self.client.patch(url, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -109,7 +84,7 @@ class PrivateExercisesApiTests(TestCase):
         """Ensure an authenticated user can delete their own exercise successfully."""
         exercise = Exercise.objects.create(user=self.user, name="Sit ups")
 
-        url = detail_url(exercise.id)
+        url = exercise_detail_url(exercise.id)
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
@@ -117,27 +92,32 @@ class PrivateExercisesApiTests(TestCase):
         self.assertFalse(exercises.exists())
 
     def test_filter_exercises_assigned_to_workouts(self):
-        """Test listing exercises to those assigned to workouts."""
+        """Test listing exercises assigned to workouts only."""
         ex1 = Exercise.objects.create(user=self.user, name="Lunges")
         ex2 = Exercise.objects.create(user=self.user, name="Squats")
         workout = Workout.objects.create(title="Leg Day", duration_minutes=55, user=self.user)
-        workout.exercises.add(ex1)
 
-        res = self.client.get(EXERCISES_URL, {"assigned_only": 1})
+        WorkoutExercise.objects.create(workout=workout, exercise=ex1, order=1, sets=3, reps=10, rest_seconds=60)
+
+        res = self.client.get(EXERCISES_LIST_URL, {"assigned_only": 1})
 
         s1 = ExerciseSerializer(ex1)
         s2 = ExerciseSerializer(ex2)
+
         self.assertIn(s1.data, res.data)
         self.assertNotIn(s2.data, res.data)
 
-    def test_filtered_exercises_unique(self):
-        """Test filtered exercises returns a unique list."""
-        ex = Exercise.objects.create(user=self.user, name="Squats")
-        wo1 = Workout.objects.create(title="Leg Day", duration_minutes=55, user=self.user)
-        wo2 = Workout.objects.create(title="Lower Body Workout", duration_minutes=55, user=self.user)
-        wo1.exercises.add(ex)
-        wo2.exercises.add(ex)
+    def test_assigned_only_returns_unique_exercise(self):
+        """Assigned filter returns each exercise once even if linked to multiple workouts."""
+        exercise = Exercise.objects.create(user=self.user, name="Squats")
+        workout1 = create_workout(user=self.user, title="Upper Body Workout", duration_minutes=45)
+        workout2 = create_workout(user=self.user, title="Lower Body Workout", duration_minutes=55)
+        create_workout_exercise(workout=workout1, exercise=exercise)
+        create_workout_exercise(workout=workout2, exercise=exercise)
 
-        res = self.client.get(EXERCISES_URL, {"assigned_only": 1})
+        res = self.client.get(EXERCISES_LIST_URL, {"assigned_only": 1})
 
+        self.assertEqual(res.status_code, 200)
         self.assertEqual(len(res.data), 1)
+        self.assertEqual(res.data[0]["id"], exercise.id)
+        self.assertEqual(res.data[0]["name"], exercise.name)
