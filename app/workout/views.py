@@ -97,10 +97,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     )
 )
 class BaseAttrViewSet(
-    mixins.DestroyModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet,
+    mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
 ):
     """Base viewset for simple user-owned attribute models."""
 

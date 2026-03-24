@@ -35,8 +35,7 @@ class UserManager(BaseUserManager):
     """
 
     def create_user(self, email, password=None, **extra_fields):
-        """
-        Create and return a regular user.
+        """Create and return a regular user.
 
         The email address is required and used as the login identifier.
         The password is hashed using Django's built-in password system before being stored in the database.

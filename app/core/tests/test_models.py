@@ -66,7 +66,6 @@ class ModelTests(TestCase):
 
         self.assertEqual(str(workout), workout.title)
 
-
     def test_create_workout_exercise(self):
         """Verify workout exercise is created and string representation is correct."""
         user = create_user()

@@ -56,23 +56,21 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
         for tag in tags:
 
-            tag_obj, created = Tag.objects.get_or_create(user=auth_user,**tag)
+            tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
             workout.tags.add(tag_obj)
 
     def _create_workout_exercises(self, workout_exercises, workout):
         """Create workout exercise rows for the workout."""
         for workout_exercise in workout_exercises:
 
-            WorkoutExercise.objects.create(workout=workout,**workout_exercise)
+            WorkoutExercise.objects.create(workout=workout, **workout_exercise)
 
     # -----------------------------------------------------------------
     # CREATE / UPDATE METHODS
     # -----------------------------------------------------------------
 
     def create(self, validated_data):
-        """
-        Create a new workout with optional nested tags and workout exercises.
-        """
+        """Create a new workout with optional nested tags and workout exercises."""
         tags = validated_data.pop("tags", [])
         workout_exercises = validated_data.pop("workout_exercises", [])
 
@@ -93,7 +91,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
             self._get_or_create_tags(tags, instance)
 
         if workout_exercises is not None:
-            instance.workout_exercises.clear()
+            instance.workout_exercises.all().delete()
             self._create_workout_exercises(workout_exercises, instance)
 
         for attr, value in validated_data.items():
