@@ -1,16 +1,16 @@
 from drf_spectacular.utils import (
-    extend_schema_view,
-    extend_schema,
     OpenApiParameter,
     OpenApiTypes,
+    extend_schema,
+    extend_schema_view,
 )
-from rest_framework import mixins, viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
+from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
-from core.models import Workout, Tag, Exercise
+from core.models import Exercise, Tag, Workout
 from workout import serializers
 
 
@@ -20,68 +20,76 @@ from workout import serializers
             OpenApiParameter(
                 "tags",
                 OpenApiTypes.STR,
-                description="Comma separated list of tag IDs to filter",
+                description="Comma separated list of tag IDs to filter by.",
             ),
             OpenApiParameter(
                 "exercises",
                 OpenApiTypes.STR,
-                description="Comma separated list of exercise IDs to filter",
+                description="Comma separated list of exercise IDs to filter by.",
             ),
         ]
     )
 )
 class WorkoutViewSet(viewsets.ModelViewSet):
-    """Manage workout API endpoints."""
+    """Manage workout API endpoints.
 
-    serializer_class = serializers.WorkoutDetailSerializer
+    Behaviour:
+    - list            -> return a lightweight workout representation
+    - retrieve        -> return a detailed workout representation
+    - create          -> create a workout owned by the authenticated user
+    - update          -> update an existing workout
+    - partial_update  -> partially update an existing workout
+    - destroy         -> delete an existing workout
+    """
+
     queryset = Workout.objects.all()
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    serializer_class = serializers.WorkoutDetailSerializer
 
-    def _params_to_ints(self, qs):
-        """Convert a comma-separated string of IDs to a list of integers."""
-        return [int(str_id) for str_id in qs.split(",")]
+    def _parse_ids_param(self, qs):
+        """Convert a comma-separated ID string into a list of integers."""
+        return [int(str_id) for str_id in qs.split(",") if str_id.strip().isdigit()]
 
     def get_queryset(self):
-        """Return workouts for the authenticated user only."""
+        """Return workouts belonging to the authenticated user only.
+
+        Optional query parameters:
+        - tags      : comma separated list of tag IDs
+        - exercises : comma separated list of exercise IDs
+        """
         tags = self.request.query_params.get("tags")
         exercises = self.request.query_params.get("exercises")
-        queryset = self.queryset
+
+        queryset = self.queryset.filter(user=self.request.user)
 
         if tags:
-            tag_ids = self._params_to_ints(tags)
-            queryset = queryset.filter(tags__id__in=tag_ids)
+            tag_ids = self._parse_ids_param(tags)
+            if tag_ids:
+                queryset = queryset.filter(tags__id__in=tag_ids)
 
         if exercises:
-            exercise_ids = self._params_to_ints(exercises)
-            queryset = queryset.filter(workout_exercises__exercise__id__in=exercise_ids)
+            exercise_ids = self._parse_ids_param(exercises)
+            if exercise_ids:
+                queryset = queryset.filter(workout_exercises__exercise__id__in=exercise_ids)
 
-        return queryset.filter(user=self.request.user).order_by("-id").distinct()
+        return queryset.order_by("-id").distinct()
 
     def get_serializer_class(self):
-        """Return the appropriate serializer class for the current action."""
+        """Return the serializer class for the current action.
+
+        Serializer behaviour:
+        - list   -> WorkoutSerializer
+        - others -> WorkoutDetailSerializer
+        """
         if self.action == "list":
             return serializers.WorkoutSerializer
-        elif self.action == "upload_image":
-            return serializers.WorkoutImageSerializer
 
-        return self.serializer_class
+        return serializers.WorkoutDetailSerializer
 
     def perform_create(self, serializer):
         """Create a new workout owned by the authenticated user."""
         serializer.save(user=self.request.user)
-
-    @action(methods=["POST"], detail=True, url_path="upload-image")
-    def upload_image(self, request, pk=None):
-        """Upload an image to workout."""
-        workout = self.get_object()
-        serializer = self.get_serializer(workout, data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema_view(
@@ -97,7 +105,12 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     )
 )
 class BaseAttrViewSet(
-    mixins.DestroyModelMixin, mixins.UpdateModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
 ):
     """Base viewset for simple user-owned attribute models."""
 
@@ -107,6 +120,10 @@ class BaseAttrViewSet(
     def get_queryset(self):
         """Return objects belonging to the current authenticated user only."""
         return self.queryset.filter(user=self.request.user).order_by("-name").distinct()
+
+    def perform_create(self, serializer):
+        """Create a new object owned by the authenticated user."""
+        serializer.save(user=self.request.user)
 
 
 class TagViewSet(BaseAttrViewSet):
@@ -127,10 +144,20 @@ class TagViewSet(BaseAttrViewSet):
 
 
 class ExerciseViewSet(BaseAttrViewSet):
-    """Manage exercise API endpoints for the authenticated user."""
+    """Manage exercise API endpoints for the authenticated user.
 
-    serializer_class = serializers.ExerciseSerializer
+    Behaviour:
+    - list            -> return a lightweight exercise representation
+    - retrieve        -> return a detailed exercise representation
+    - create          -> create an exercise owned by the authenticated user
+    - update          -> update an existing exercise
+    - partial_update  -> partially update an existing exercise
+    - destroy         -> delete an existing exercise
+    - upload_image    -> upload or replace an exercise image
+    """
+
     queryset = Exercise.objects.all()
+    serializer_class = serializers.ExerciseSerializer
 
     def get_queryset(self):
         """Return exercises for the authenticated user only."""
@@ -141,3 +168,29 @@ class ExerciseViewSet(BaseAttrViewSet):
             queryset = queryset.filter(workout_exercises__isnull=False)
 
         return queryset.distinct()
+
+    def get_serializer_class(self):
+        """Return the serializer class for the current action.
+
+        Serializer behaviour:
+        - list         -> ExerciseSerializer
+        - retrieve     -> ExerciseSerializer
+        - upload_image -> ExerciseImageSerializer
+        - others       -> ExerciseSerializer
+        """
+        if self.action == "upload_image":
+            return serializers.ExerciseImageSerializer
+
+        return serializers.ExerciseSerializer
+
+    @action(methods=["POST"], detail=True, url_path="upload-image")
+    def upload_image(self, request, pk=None):
+        """Upload or replace an image for an exercise."""
+        exercise = self.get_object()
+        serializer = self.get_serializer(exercise, data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
