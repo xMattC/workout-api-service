@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 
@@ -9,6 +10,9 @@ from django.contrib.auth.models import (
     BaseUserManager,  # Provides helper methods for creating users
     PermissionsMixin,  # Adds permission-related fields (groups, is_superuser, etc.)
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
@@ -51,6 +55,8 @@ class UserManager(BaseUserManager):
         user.set_password(password)
         user.save(using=self._db)
 
+        logger.info("User created id=%s email=%s", user.id, user.email)
+
         return user
 
     def create_superuser(self, email, password):
@@ -64,6 +70,8 @@ class UserManager(BaseUserManager):
         user.is_staff = True
         user.is_superuser = True
         user.save(using=self._db)
+
+        logger.info("Superuser created id=%s email=%s", user.id, user.email)
 
         return user
 

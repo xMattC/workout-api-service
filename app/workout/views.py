@@ -1,3 +1,5 @@
+import logging
+
 from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiTypes,
@@ -12,6 +14,9 @@ from rest_framework.response import Response
 
 from core.models import Exercise, Tag, Workout
 from workout import serializers
+
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema_view(
@@ -90,6 +95,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new workout owned by the authenticated user."""
         serializer.save(user=self.request.user)
+        logger.info("Workout create requested by user_id=%s", self.request.user.id)
 
 
 @extend_schema_view(
@@ -193,4 +199,12 @@ class ExerciseViewSet(BaseAttrViewSet):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.warning(
+            "Exercise image upload validation failed for exercise_id=%s by user_id=%s: %s",
+            exercise.id,
+            request.user.id,
+            serializer.errors,
+        )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

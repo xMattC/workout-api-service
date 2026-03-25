@@ -14,6 +14,10 @@ Briefly describe the task.
 
 What should exist after this task is complete?
 
+
+New / Updated Files:
+
+
 ## Checklist
 
 - [ ] Implementation complete
