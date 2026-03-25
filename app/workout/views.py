@@ -19,22 +19,61 @@ from workout import serializers
 logger = logging.getLogger(__name__)
 
 
-@extend_schema_view(
+# ---------------------------------------------------------------------
+# SWAGGER / OPENAPI DECORATORS
+# ---------------------------------------------------------------------
+
+WORKOUT_VIEWSET_SCHEMA = extend_schema_view(
     list=extend_schema(
         parameters=[
             OpenApiParameter(
-                "tags",
-                OpenApiTypes.STR,
+                name="tags",
+                type=OpenApiTypes.STR,
                 description="Comma separated list of tag IDs to filter by.",
             ),
             OpenApiParameter(
-                "exercises",
-                OpenApiTypes.STR,
+                name="exercises",
+                type=OpenApiTypes.STR,
                 description="Comma separated list of exercise IDs to filter by.",
             ),
         ]
     )
 )
+
+TAG_VIEWSET_SCHEMA = extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="assigned_only",
+                type=OpenApiTypes.INT,
+                enum=[0, 1],
+                description="Filter by tags assigned to workouts.",
+            ),
+        ]
+    )
+)
+
+EXERCISE_VIEWSET_SCHEMA = extend_schema_view(
+    list=extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="assigned_only",
+                type=OpenApiTypes.INT,
+                enum=[0, 1],
+                description="Filter by exercises assigned to workouts.",
+            ),
+        ]
+    )
+)
+
+EXERCISE_UPLOAD_IMAGE_SCHEMA = extend_schema(
+    description="Upload or replace an image for a specific exercise.",
+    request=serializers.ExerciseImageSerializer,
+    responses=serializers.ExerciseImageSerializer,
+)
+
+
+@WORKOUT_VIEWSET_SCHEMA
 class WorkoutViewSet(viewsets.ModelViewSet):
     """Manage workout API endpoints."""
 
@@ -52,7 +91,7 @@ class WorkoutViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    # Default serializer is detail; overridden for non-retrieve actions
+    # Default serializer is detail; overridden for non-retrieve actions.
     serializer_class = serializers.WorkoutDetailSerializer
 
     def _parse_ids_param(self, qs):
@@ -64,16 +103,16 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         tags = self.request.query_params.get("tags")
         exercises = self.request.query_params.get("exercises")
 
-        # Always scope to authenticated user
+        # Always scope to authenticated user.
         queryset = self.queryset.filter(user=self.request.user)
 
-        # Filter by tags
+        # Filter by tags.
         if tags:
             tag_ids = self._parse_ids_param(tags)
             if tag_ids:
                 queryset = queryset.filter(tags__id__in=tag_ids)
 
-        # Filter by exercises
+        # Filter by exercises.
         if exercises:
             exercise_ids = self._parse_ids_param(exercises)
             if exercise_ids:
@@ -88,7 +127,6 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         - retrieve          -> WorkoutDetailSerializer
         - all other actions -> WorkoutSerializer
         """
-
         if self.action == "retrieve":
             return serializers.WorkoutDetailSerializer
 
@@ -100,25 +138,13 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         logger.info("Workout create requested by user_id=%s", self.request.user.id)
 
 
-@extend_schema_view(
-    list=extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "assigned_only",
-                OpenApiTypes.INT,
-                enum=[0, 1],
-                description="Filter by items assigned to workouts.",
-            ),
-        ]
-    )
-)
 class BaseAttrViewSet(
-    mixins.CreateModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.DestroyModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet,
+    mixins.CreateModelMixin,  # provides POST /<resource>/ -> create()
+    mixins.RetrieveModelMixin,  # provides GET /<resource>/<id>/ -> retrieve()
+    mixins.DestroyModelMixin,  # provides DELETE /<resource>/<id>/ -> destroy()
+    mixins.UpdateModelMixin,  # provides PUT/PATCH /<resource>/<id>/ -> update() / partial_update()
+    mixins.ListModelMixin,  # provides GET /<resource>/ -> list()
+    viewsets.GenericViewSet,  # base viewset that wires mixin actions into routes
 ):
     """Base viewset for simple user-owned attribute models."""
 
@@ -134,6 +160,7 @@ class BaseAttrViewSet(
         serializer.save(user=self.request.user)
 
 
+@TAG_VIEWSET_SCHEMA
 class TagViewSet(BaseAttrViewSet):
     """Manage tag API endpoints for the authenticated user."""
 
@@ -151,17 +178,21 @@ class TagViewSet(BaseAttrViewSet):
     queryset = Tag.objects.all()
 
     def get_queryset(self):
-        """Return tags for the authenticated user, optionally filtered by assignment."""
-        assigned_only = bool(int(self.request.query_params.get("assigned_only", 0)))
+        """Return tags for the authenticated user, with optional filtering."""
+
         queryset = super().get_queryset()
 
-        # Only return tags linked to workouts if requested
-        if assigned_only:
+        # Check query param (e.g. /tags/?assigned_only=1)
+        # When set, only include tags that are linked to at least one workout
+        assigned_to_workouts_only = self.request.query_params.get("assigned_only") == "1"
+
+        if assigned_to_workouts_only:
             queryset = queryset.filter(workout__isnull=False)
 
         return queryset.distinct()
 
 
+@EXERCISE_VIEWSET_SCHEMA
 class ExerciseViewSet(BaseAttrViewSet):
     """Manage exercise API endpoints for the authenticated user."""
 
@@ -180,12 +211,15 @@ class ExerciseViewSet(BaseAttrViewSet):
     serializer_class = serializers.ExerciseSerializer
 
     def get_queryset(self):
-        """Return exercises for the authenticated user, optionally filtered by assignment."""
-        assigned_only = bool(int(self.request.query_params.get("assigned_only", 0)))
+        """Return exercises for the authenticated user, with optional filtering."""
+
         queryset = super().get_queryset()
 
-        # Only return exercises used in workouts if requested
-        if assigned_only:
+        # Check query param (e.g. /exercises/?assigned_only=1)
+        # If set, only include exercises that are linked to at least one workout
+        assigned_to_workouts_only = self.request.query_params.get("assigned_only") == "1"
+
+        if assigned_to_workouts_only:
             queryset = queryset.filter(workout_exercises__isnull=False)
 
         return queryset.distinct()
@@ -193,15 +227,16 @@ class ExerciseViewSet(BaseAttrViewSet):
     def get_serializer_class(self):
         """Return the serializer class for the current action.
 
-        Serializer behaviour:
-        - upload_image    -> ExerciseImageSerializer
-        - all other actions -> ExerciseSerializer
+        # Serializer behaviour:
+        # - upload_image      -> ExerciseImageSerializer
+        # - all other actions -> ExerciseSerializer
         """
         if self.action == "upload_image":
             return serializers.ExerciseImageSerializer
 
         return serializers.ExerciseSerializer
 
+    @EXERCISE_UPLOAD_IMAGE_SCHEMA
     @action(methods=["POST"], detail=True, url_path="upload-image")
     def upload_image(self, request, pk=None):
         """Upload or replace an image for an exercise."""

@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from core.models import Exercise, Tag, Workout, WorkoutExercise
 
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------
 # EXERCISE SERIALISERS
@@ -36,9 +37,6 @@ class ExerciseImageSerializer(serializers.ModelSerializer):
         fields = ["id", "image"]
         read_only_fields = ["id"]
         extra_kwargs = {"image": {"required": True}}
-
-
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------
@@ -146,11 +144,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
             tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
 
             if created:
-                logger.info(
-                    "Created tag '%s' for user_id=%s",
-                    tag_obj.name,
-                    auth_user.id,
-                )
+                logger.info("Created tag '%s' for user_id=%s", tag_obj.name,auth_user.id)
 
             workout.tags.add(tag_obj)
 
