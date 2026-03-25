@@ -20,6 +20,6 @@ def tag_detail_url(tag_id):
     return reverse("workout:tag-detail", args=[tag_id])
 
 
-def workout_image_upload_url(workout_id):
-    """Return the URL for the workout image upload endpoint."""
-    return reverse("workout:workout-upload-image", args=[workout_id])
+def exercise_image_upload_url(exercise_id):
+    """Return the URL for the exercise image upload endpoint."""
+    return reverse("workout:exercise-upload-image", args=[exercise_id])

@@ -27,6 +27,7 @@ def exercise_image_file_path(instance, filename):
 
     return os.path.join("uploads", "exercise", filename)
 
+
 def workout_image_file_path(instance, filename):
     """Compatibility wrapper for old migrations."""
     return exercise_image_file_path(instance, filename)

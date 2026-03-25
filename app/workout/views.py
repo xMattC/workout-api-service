@@ -84,13 +84,16 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         """Return the serializer class for the current action.
 
         Serializer behaviour:
-        - list   -> WorkoutSerializer
-        - others -> WorkoutDetailSerializer
+        - list, create, update, partial_update -> WorkoutSerializer
+        - retrieve                             -> WorkoutDetailSerializer
         """
-        if self.action == "list":
-            return serializers.WorkoutSerializer
+        if self.action == "retrieve":
+            return serializers.WorkoutDetailSerializer
 
-        return serializers.WorkoutDetailSerializer
+        # serializer_class = super().get_serializer_class()
+        # print(f"ACTION: {self.action}", flush=True)
+        # print(f"SERIALIZER CLASS: {serializer_class.__name__}", flush=True)
+        return serializers.WorkoutSerializer
 
     def perform_create(self, serializer):
         """Create a new workout owned by the authenticated user."""

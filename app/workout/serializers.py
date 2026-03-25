@@ -69,7 +69,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Workout
-        fields = ["id", "title", "duration_minutes", "tags", "workout_exercises"]
+        fields = ["id", "title", "description", "duration_minutes", "tags", "workout_exercises"]
         read_only_fields = ["id"]
 
     def _get_or_create_tags(self, tags, workout):
@@ -140,10 +140,10 @@ class WorkoutSerializer(serializers.ModelSerializer):
         return instance
 
 
-class WorkoutDetailSerializer(serializers.ModelSerializer):
+class WorkoutDetailSerializer(WorkoutSerializer):
     """Serialise workout objects with expanded detail for retrieve operations."""
 
-    # tags = TagSerializer(many=True, read_only=False)
+    tags = TagSerializer(many=True, required=False)
     workout_exercises = WorkoutExerciseDetailSerializer(many=True, read_only=True)
 
     class Meta:
