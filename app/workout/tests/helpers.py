@@ -20,7 +20,6 @@ def create_workout(user, **params):
         "title": "Sample workout",
         "duration_minutes": 22,
         "description": "Sample workout description.",
-        "image": None,
     }
     defaults.update(params)
 
@@ -29,7 +28,10 @@ def create_workout(user, **params):
 
 def create_exercise(user, **params):
     """Create and return a sample exercise."""
-    defaults = {"name": "Sample exercise"}
+    defaults = {
+        "name": "Sample exercise",
+        "image": None,
+    }
     defaults.update(params)
 
     return Exercise.objects.create(user=user, **defaults)

@@ -2,14 +2,33 @@ import logging
 
 from rest_framework import serializers
 
-from core.models import Workout, Tag, Exercise, WorkoutExercise
+from core.models import Exercise, Tag, Workout, WorkoutExercise
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    """Serialise exercise objects for general API usage."""
+
+    class Meta:
+        model = Exercise
+        fields = ["id", "name", "image"]
+        read_only_fields = ["id"]
+
+
+class ExerciseImageSerializer(serializers.ModelSerializer):
+    """Serialise exercise image uploads only."""
+
+    class Meta:
+        model = Exercise
+        fields = ["id", "image"]
+        read_only_fields = ["id"]
+        extra_kwargs = {"image": {"required": True}}
 
 
 logger = logging.getLogger(__name__)
 
 
 class WorkoutExerciseSerializer(serializers.ModelSerializer):
-    """Serialize workout exercise objects for basic CRUD operations."""
+    """Serialise workout exercise rows for create and update operations."""
 
     class Meta:
         model = WorkoutExercise
@@ -17,17 +36,19 @@ class WorkoutExerciseSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-class ExerciseSerializer(serializers.ModelSerializer):
-    """Serialize exercise objects for basic CRUD operations."""
+class WorkoutExerciseDetailSerializer(serializers.ModelSerializer):
+    """Serialise workout exercise rows with nested exercise detail for reads."""
+
+    exercise = ExerciseSerializer(read_only=True)
 
     class Meta:
-        model = Exercise
-        fields = ["id", "name"]
+        model = WorkoutExercise
+        fields = ["id", "exercise", "order", "sets", "reps", "rest_seconds"]
         read_only_fields = ["id"]
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Serialize tag objects for basic CRUD operations."""
+    """Serialise tag objects for general API usage."""
 
     class Meta:
         model = Tag
@@ -36,32 +57,28 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class WorkoutSerializer(serializers.ModelSerializer):
-    """Serialize workout objects, including nested tag and exercise data.
+    """Serialise workout objects with nested tag and workout exercise input.
 
     Supports:
-    - Creating workouts with nested tags and workout_exercises
-    - Updating workouts with replacement logic for relationships
+    - Creating workouts with nested tags and workout_exercises.
+    - Updating workouts with replacement logic for nested relationships.
     """
 
-    tags = TagSerializer(many=True, required=False)
     workout_exercises = WorkoutExerciseSerializer(many=True, required=False)
+    tags = TagSerializer(many=True, required=False)
 
     class Meta:
         model = Workout
-        fields = ["id", "title", "duration_minutes", "tags", "workout_exercises"]
+        fields = ["id", "title", "description", "duration_minutes", "tags", "workout_exercises"]
         read_only_fields = ["id"]
-
-    # -----------------------------------------------------------------
-    # HELPER METHODS
-    # -----------------------------------------------------------------
 
     def _get_or_create_tags(self, tags, workout):
         """Retrieve or create tag objects and assign them to the workout."""
         auth_user = self.context["request"].user
 
         for tag in tags:
-            # Optional debug (uncomment if needed)
-            # logger.debug("Processing tag payload: %s", tag)
+
+            logger.debug("Processing tag payload: %s", tag)
 
             tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
 
@@ -85,10 +102,6 @@ class WorkoutSerializer(serializers.ModelSerializer):
         for workout_exercise in workout_exercises:
             WorkoutExercise.objects.create(workout=workout, **workout_exercise)
 
-    # -----------------------------------------------------------------
-    # CREATE / UPDATE METHODS
-    # -----------------------------------------------------------------
-
     def create(self, validated_data):
         """Create a new workout with optional nested tags and workout exercises."""
         tags = validated_data.pop("tags", [])
@@ -104,7 +117,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
         return workout
 
     def update(self, instance, validated_data):
-        """Update an existing workout, nested tags and workout exercises."""
+        """Update an existing workout, including nested tags and workout exercises."""
         tags = validated_data.pop("tags", None)
         workout_exercises = validated_data.pop("workout_exercises", None)
         logger.debug("Update called with tags=%s", tags)
@@ -128,17 +141,12 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
 
 class WorkoutDetailSerializer(WorkoutSerializer):
-    """Extend workout serializer to include additional detail fields."""
+    """Serialise workout objects with expanded detail for retrieve operations."""
 
-    class Meta(WorkoutSerializer.Meta):
-        fields = WorkoutSerializer.Meta.fields + ["description", "image"]
-
-
-class WorkoutImageSerializer(serializers.ModelSerializer):
-    """Serializer for uploading images to workout."""
+    tags = TagSerializer(many=True, required=False)
+    workout_exercises = WorkoutExerciseDetailSerializer(many=True, read_only=True)
 
     class Meta:
         model = Workout
-        fields = ["id", "image"]
+        fields = ["id", "title", "description", "duration_minutes", "tags", "workout_exercises"]
         read_only_fields = ["id"]
-        extra_kwargs = {"image": {"required": "True"}}

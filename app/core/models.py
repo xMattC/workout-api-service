@@ -20,12 +20,17 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------
 
 
-def workout_image_file_path(instance, filename):
-    """Generate file path for new workout image."""
+def exercise_image_file_path(instance, filename):
+    """Generate file path for new exercise image."""
     ext = os.path.splitext(filename)[1]
     filename = f"{uuid.uuid4()}{ext}"
 
-    return os.path.join("uploads", "workout", filename)
+    return os.path.join("uploads", "exercise", filename)
+
+
+def workout_image_file_path(instance, filename):
+    """Compatibility wrapper for old migrations."""
+    return exercise_image_file_path(instance, filename)
 
 
 # ---------------------------------------------------------------------
@@ -94,7 +99,6 @@ class Workout(models.Model):
     description = models.TextField(blank=True)
     duration_minutes = models.IntegerField()  # TODO: Temporary field — later derived from WorkoutExercise
     tags = models.ManyToManyField("Tag")
-    image = models.ImageField(null=True, upload_to=workout_image_file_path)
 
     def __str__(self):
         return self.title
@@ -120,6 +124,7 @@ class Exercise(models.Model):
 
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    image = models.ImageField(null=True, upload_to=exercise_image_file_path)
 
     def __str__(self):
         return self.name

@@ -111,11 +111,11 @@ class ModelTests(TestCase):
         self.assertEqual(str(exercise), exercise.name)
 
     @patch("uuid.uuid4")
-    def test_workout_file_name_uuid(self, mock_uuid):
-        """Ensure workout image file path is generated using a UUID-based filename."""
+    def test_exercise_file_name_uuid(self, mock_uuid):
+        """Ensure exercise image file path is generated using a UUID-based filename."""
         uuid = "test-uuid"
         mock_uuid.return_value = uuid
 
-        file_path = models.workout_image_file_path(None, "example.jpg")
+        file_path = models.exercise_image_file_path(None, "example.jpg")
 
-        self.assertEqual(file_path, f"uploads/workout/{uuid}.jpg")
+        self.assertEqual(file_path, f"uploads/exercise/{uuid}.jpg")
