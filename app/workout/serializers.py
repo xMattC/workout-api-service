@@ -1,6 +1,11 @@
+import logging
+
 from rest_framework import serializers
 
 from core.models import Workout, Tag, Exercise, WorkoutExercise
+
+
+logger = logging.getLogger(__name__)
 
 
 class WorkoutExerciseSerializer(serializers.ModelSerializer):
@@ -55,14 +60,29 @@ class WorkoutSerializer(serializers.ModelSerializer):
         auth_user = self.context["request"].user
 
         for tag in tags:
+            # Optional debug (uncomment if needed)
+            # logger.debug("Processing tag payload: %s", tag)
 
             tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
+
+            if created:
+                logger.info(
+                    "Created tag '%s' for user_id=%s",
+                    tag_obj.name,
+                    auth_user.id,
+                )
+
             workout.tags.add(tag_obj)
+
+        logger.debug(
+            "Final tags on workout_id=%s: %s",
+            workout.id,
+            list(workout.tags.values_list("name", flat=True)),
+        )
 
     def _create_workout_exercises(self, workout_exercises, workout):
         """Create workout exercise rows for the workout."""
         for workout_exercise in workout_exercises:
-
             WorkoutExercise.objects.create(workout=workout, **workout_exercise)
 
     # -----------------------------------------------------------------
@@ -76,6 +96,8 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
         workout = Workout.objects.create(**validated_data)
 
+        logger.info("Workout created id=%s", workout.id)
+
         self._get_or_create_tags(tags, workout)
         self._create_workout_exercises(workout_exercises, workout)
 
@@ -85,6 +107,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
         """Update an existing workout, nested tags and workout exercises."""
         tags = validated_data.pop("tags", None)
         workout_exercises = validated_data.pop("workout_exercises", None)
+        logger.debug("Update called with tags=%s", tags)
 
         if tags is not None:
             instance.tags.clear()
@@ -98,6 +121,9 @@ class WorkoutSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         instance.save()
+
+        logger.info("Workout updated id=%s", instance.id)
+
         return instance
 
 

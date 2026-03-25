@@ -21,6 +21,7 @@ services:
       - DB_USER=devuser
       - DB_PASSWORD=changeme
       - DEBUG=1
+      - ENVIRONMENT=dev
     depends_on:
       db:
         condition: service_healthy
