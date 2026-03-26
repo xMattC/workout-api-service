@@ -105,9 +105,9 @@ class ModelTests(TestCase):
     def test_create_exercise(self):
         """Ensure an exercise is created successfully and string representation returns its name."""
         user = create_user()
-
         exercise = models.Exercise.objects.create(user=user, name="Exercise1")
 
+        self.assertFalse(exercise.is_public)
         self.assertEqual(str(exercise), exercise.name)
 
     @patch("uuid.uuid4")

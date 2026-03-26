@@ -47,7 +47,7 @@ class ExerciseImageSerializer(serializers.ModelSerializer):
 class WorkoutExerciseSerializer(serializers.ModelSerializer):
     """Serialise workout exercise rows for create and update operations.
 
-    Input format (write):
+    Input format (write - POST / PUT / PATCH):
     - Expects exercise as ID
     - Used when creating/updating workouts
     """
@@ -61,7 +61,7 @@ class WorkoutExerciseSerializer(serializers.ModelSerializer):
 class WorkoutExerciseDetailSerializer(serializers.ModelSerializer):
     """Serialise workout exercise rows with nested exercise detail for reads.
 
-    Output format (read):
+    Output format (read - GET):
     - Expands exercise into full object instead of ID
     - Used for retrieve endpoints
     """
@@ -101,8 +101,7 @@ class TagSerializer(serializers.ModelSerializer):
 class WorkoutSerializer(serializers.ModelSerializer):
     """Serialise workout objects with nested input support.
 
-    Purpose:
-    - Handles CREATE and UPDATE operations
+    Purpose Write operations (create/update):
     - Accepts nested input for:
         - tags (list of dicts)
         - workout_exercises (list of dicts)
@@ -144,7 +143,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
             tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
 
             if created:
-                logger.info("Created tag '%s' for user_id=%s", tag_obj.name,auth_user.id)
+                logger.info("Created tag '%s' for user_id=%s", tag_obj.name, auth_user.id)
 
             workout.tags.add(tag_obj)
 
@@ -256,11 +255,4 @@ class WorkoutDetailSerializer(WorkoutSerializer):
         - read_only → not used for writes
     """
 
-    # Override nested fields for READ representation
-    tags = TagSerializer(many=True, required=False)
     workout_exercises = WorkoutExerciseDetailSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Workout
-        fields = ["id", "title", "description", "duration_minutes", "tags", "workout_exercises"]
-        read_only_fields = ["id"]

@@ -72,20 +72,71 @@ EXERCISE_UPLOAD_IMAGE_SCHEMA = extend_schema(
     responses=serializers.ExerciseImageSerializer,
 )
 
+# ---------------------------------------------------------------------
+# SHARED BASE VIEWSETS / HELPERS
+# ---------------------------------------------------------------------
+
+
+class BaseAttrViewSet(
+    mixins.CreateModelMixin,  # POST /<resource>/ -> create()
+    mixins.RetrieveModelMixin,  # GET /<resource>/<id>/ -> retrieve()
+    mixins.DestroyModelMixin,  # DELETE /<resource>/<id>/   -> destroy()
+    mixins.UpdateModelMixin,  # PUT/PATCH -> update() / partial_update()
+    mixins.ListModelMixin,  # GET /<resource>/ -> list()
+    viewsets.GenericViewSet,  # wires mixin actions into URL routes
+    # NOTE: This could be simplified by inheriting from `viewsets.ModelViewSet`, which already includes all of the
+    # above mixins + GenericViewSet - but we want to be explicit about which actions are supported in BaseAttrViewSet.
+):
+    """Base viewset for simple user-owned attribute models.
+
+    Purpose:
+    - Provide shared CRUD behaviour for models owned by a user
+    - Avoid duplicating logic across multiple viewsets
+
+    Used by:
+    - TagViewSet
+    - ExerciseViewSet
+
+    Key behaviour:
+    - Automatically scopes all queries to the authenticated user
+    - Automatically assigns the authenticated user on object creation
+    - Provides standard CRUD actions via DRF mixins
+
+    Notes:
+    - This class is NOT registered with the router, so it does not create API endpoints directly
+    - It is only used as a base class to share behaviour
+    """
+
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Return objects belonging to the authenticated user only."""
+        return self.queryset.filter(user=self.request.user).order_by("-name").distinct()
+
+    def perform_create(self, serializer):
+        """Create a new object owned by the authenticated user."""
+        serializer.save(user=self.request.user)
+
+
+# ---------------------------------------------------------------------
+# API VIEWSETS
+# ---------------------------------------------------------------------
+
 
 @WORKOUT_VIEWSET_SCHEMA
 class WorkoutViewSet(viewsets.ModelViewSet):
     """Manage workout API endpoints."""
 
     # ---------------------------------------------------------------------
-    # ACTION BEHAVIOUR
+    # ACTION BEHAVIOUR (inherited from DRF ModelViewSet)
     # ---------------------------------------------------------------------
-    # - list [GET]              -> return a lightweight list representation of workouts
-    # - retrieve [GET]          -> return a detailed representation of a single workout
-    # - create [POST]           -> create a workout for the authenticated user
-    # - update [PUT]            -> fully replace editable fields on an existing workout
-    # - partial_update [PATCH]  -> partially update an existing workout
-    # - destroy [DELETE]        -> delete an existing workout
+    # - list [GET]              -> return a lightweight list representation of workouts (ListModelMixin)
+    # - retrieve [GET]          -> return a detailed representation of a single workout (RetrieveModelMixin)
+    # - create [POST]           -> create a workout for the authenticated user (CreateModelMixin)
+    # - update [PUT]            -> fully replace editable fields on an existing workout (UpdateModelMixin)
+    # - partial_update [PATCH]  -> partially update an existing workout (UpdateModelMixin)
+    # - destroy [DELETE]        -> delete an existing workout (DestroyModelMixin)
 
     queryset = Workout.objects.all()
     authentication_classes = [TokenAuthentication]
@@ -138,74 +189,21 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         logger.info("Workout create requested by user_id=%s", self.request.user.id)
 
 
-class BaseAttrViewSet(
-    mixins.CreateModelMixin,  # provides POST /<resource>/ -> create()
-    mixins.RetrieveModelMixin,  # provides GET /<resource>/<id>/ -> retrieve()
-    mixins.DestroyModelMixin,  # provides DELETE /<resource>/<id>/ -> destroy()
-    mixins.UpdateModelMixin,  # provides PUT/PATCH /<resource>/<id>/ -> update() / partial_update()
-    mixins.ListModelMixin,  # provides GET /<resource>/ -> list()
-    viewsets.GenericViewSet,  # base viewset that wires mixin actions into routes
-):
-    """Base viewset for simple user-owned attribute models."""
-
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        """Return objects belonging to the authenticated user only."""
-        return self.queryset.filter(user=self.request.user).order_by("-name").distinct()
-
-    def perform_create(self, serializer):
-        """Create a new object owned by the authenticated user."""
-        serializer.save(user=self.request.user)
-
-
-@TAG_VIEWSET_SCHEMA
-class TagViewSet(BaseAttrViewSet):
-    """Manage tag API endpoints for the authenticated user."""
-
-    # ---------------------------------------------------------------------
-    # ACTION BEHAVIOUR
-    # ---------------------------------------------------------------------
-    # - list [GET]              -> return tag objects
-    # - retrieve [GET]          -> return a single tag
-    # - create [POST]           -> create a tag owned by the authenticated user
-    # - update [PUT]            -> fully update an existing tag
-    # - partial_update [PATCH]  -> partially update an existing tag
-    # - destroy [DELETE]        -> delete an existing tag
-
-    serializer_class = serializers.TagSerializer
-    queryset = Tag.objects.all()
-
-    def get_queryset(self):
-        """Return tags for the authenticated user, with optional filtering."""
-
-        queryset = super().get_queryset()
-
-        # Check query param (e.g. /tags/?assigned_only=1)
-        # When set, only include tags that are linked to at least one workout
-        assigned_to_workouts_only = self.request.query_params.get("assigned_only") == "1"
-
-        if assigned_to_workouts_only:
-            queryset = queryset.filter(workout__isnull=False)
-
-        return queryset.distinct()
-
-
 @EXERCISE_VIEWSET_SCHEMA
 class ExerciseViewSet(BaseAttrViewSet):
     """Manage exercise API endpoints for the authenticated user."""
 
     # ---------------------------------------------------------------------
-    # ACTION BEHAVIOUR
+    # ACTION BEHAVIOUR (inherited from DRF mixins via BaseAttrViewSet)
     # ---------------------------------------------------------------------
-    # - list [GET]              -> return exercise objects
-    # - retrieve [GET]          -> return a single exercise
-    # - create [POST]           -> create an exercise owned by the authenticated user
-    # - update [PUT]            -> fully update an existing exercise
-    # - partial_update [PATCH]  -> partially update an existing exercise
-    # - destroy [DELETE]        -> delete an existing exercise
-    # - upload_image [POST]     -> upload or replace an exercise image
+    # - list [GET]              -> return exercise objects (ListModelMixin)
+    # - retrieve [GET]          -> return a single exercise (RetrieveModelMixin)
+    # - create [POST]           -> create an exercise owned by the authenticated user (CreateModelMixin)
+    # - update [PUT]            -> fully update an existing exercise (UpdateModelMixin)
+    # - partial_update [PATCH]  -> partially update an existing exercise (UpdateModelMixin)
+    # - destroy [DELETE]        -> delete an existing exercise (DestroyModelMixin)
+    #
+    # - upload_image [POST]     -> custom action to upload/replace exercise image (@action decorator)
 
     queryset = Exercise.objects.all()
     serializer_class = serializers.ExerciseSerializer
@@ -254,3 +252,35 @@ class ExerciseViewSet(BaseAttrViewSet):
             serializer.errors,
         )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@TAG_VIEWSET_SCHEMA
+class TagViewSet(BaseAttrViewSet):
+    """Manage tag API endpoints for the authenticated user."""
+
+    # ---------------------------------------------------------------------
+    # ACTION BEHAVIOUR (inherited from DRF mixins via BaseAttrViewSet)
+    # ---------------------------------------------------------------------
+    # - list [GET]              -> return tag objects (ListModelMixin)
+    # - retrieve [GET]          -> return a single tag (RetrieveModelMixin)
+    # - create [POST]           -> create a tag owned by the authenticated user (CreateModelMixin)
+    # - update [PUT]            -> fully update an existing tag (UpdateModelMixin)
+    # - partial_update [PATCH]  -> partially update an existing tag (UpdateModelMixin)
+    # - destroy [DELETE]        -> delete an existing tag (DestroyModelMixin)
+
+    serializer_class = serializers.TagSerializer
+    queryset = Tag.objects.all()
+
+    def get_queryset(self):
+        """Return tags for the authenticated user, with optional filtering."""
+
+        queryset = super().get_queryset()
+
+        # Check query param (e.g. /tags/?assigned_only=1)
+        # When set, only include tags that are linked to at least one workout
+        assigned_to_workouts_only = self.request.query_params.get("assigned_only") == "1"
+
+        if assigned_to_workouts_only:
+            queryset = queryset.filter(workout__isnull=False)
+
+        return queryset.distinct()

@@ -6,18 +6,13 @@ from django.conf import settings
 from django.db import models
 
 from django.contrib.auth.models import (
-    AbstractBaseUser,  # Provides password hashing and authentication features
-    BaseUserManager,  # Provides helper methods for creating users
-    PermissionsMixin,  # Adds permission-related fields (groups, is_superuser, etc.)
+    AbstractBaseUser,   # Provides password hashing and authentication features
+    BaseUserManager,    # Provides helper methods for creating users
+    PermissionsMixin,   # Adds permission-related fields (groups, is_superuser, etc.)
 )
 
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------------------
 
 
 def exercise_image_file_path(instance, filename):
@@ -33,9 +28,6 @@ def workout_image_file_path(instance, filename):
     return exercise_image_file_path(instance, filename)
 
 
-# ---------------------------------------------------------------------
-# MODELS
-# ---------------------------------------------------------------------
 class UserManager(BaseUserManager):
     """Custom manager for the User model.
 
@@ -125,6 +117,7 @@ class Exercise(models.Model):
     name = models.CharField(max_length=255)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     image = models.ImageField(null=True, upload_to=exercise_image_file_path)
+    is_public = models.BooleanField(default=False) # If true, exercise is visible to all users
 
     def __str__(self):
         return self.name

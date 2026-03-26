@@ -42,31 +42,106 @@ class PrivateExercisesApiTests(TestCase):
     # BASIC CRUD
     # -----------------------------------------------------------------
 
+    def test_admin_can_create_public_exercise(self):
+        """Ensure an admin user can create a public exercise."""
+        admin_user = create_user(email="admin@example.com", is_staff=True)
+        self.client.force_authenticate(admin_user)
+
+        payload = {
+            "name": "Bench Press",
+            "is_public": True,
+        }
+
+        res = self.client.post(EXERCISES_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        exercise = Exercise.objects.get(id=res.data["id"])
+        self.assertEqual(exercise.user, admin_user)
+        self.assertTrue(exercise.is_public)
+
+    def test_admin_can_create_private_exercise(self):
+        """Ensure admin can also create private exercises if needed."""
+        admin_user = create_user(email="admin@example.com", is_staff=True)
+        self.client.force_authenticate(admin_user)
+
+        payload = {
+            "name": "Custom Move",
+            "is_public": False,
+        }
+
+        res = self.client.post(EXERCISES_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        exercise = Exercise.objects.get(id=res.data["id"])
+        self.assertFalse(exercise.is_public)
+
     def test_retrieve_exercises(self):
-        """Verify that an authenticated user can retrieve a list of their exercises."""
-        Exercise.objects.create(user=self.user, name="Bench Press")
-        Exercise.objects.create(user=self.user, name="Squats")
+        """Verify that an authenticated user can retrieve their own exercises and public exercises."""
+        admin_user = create_user(email="admin@example.com", is_staff=True)
+
+        Exercise.objects.create(user=self.user, name="Bench Press", is_public=False)
+        Exercise.objects.create(user=self.user, name="Squats", is_public=False)
+        Exercise.objects.create(user=admin_user, name="Push Up", is_public=True)
 
         res = self.client.get(EXERCISES_LIST_URL)
 
-        exercises = Exercise.objects.filter(user=self.user).order_by("-name")
+        exercises = Exercise.objects.filter(user=self.user).union(
+            Exercise.objects.filter(is_public=True)
+        ).order_by("-name")
         serializer = ExerciseSerializer(exercises, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
-    def test_exercises_limited_to_user(self):
-        """Ensure the exercise list endpoint returns only exercises belonging to the authenticated user."""
-        user2 = create_user(email="user2@example.com")
-        Exercise.objects.create(user=user2, name="Salt")
-        exercise = Exercise.objects.create(user=self.user, name="Deadlift")
+    def test_create_exercise_always_private(self):
+        """Ensure a normal user creates exercises as private, even if is_public is sent."""
+        payload = {"name": "Bench Press", "is_public": True}
+        res = self.client.post(EXERCISES_LIST_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        exercise = Exercise.objects.get(id=res.data["id"])
+        self.assertEqual(exercise.user, self.user)
+        self.assertFalse(exercise.is_public)
+
+    def test_retrieve_exercises_includes_user_private_and_public(self):
+        """Ensure the exercise list includes the user's private exercises and public exercises."""
+        admin_user = create_user(email="admin@example.com", is_staff=True)
+        other_user = create_user(email="other@example.com")
+
+        private_own = Exercise.objects.create(user=self.user, name="My Deadlift", is_public=False)
+        public_admin = Exercise.objects.create(user=admin_user, name="Push Up", is_public=True)
+        private_other = Exercise.objects.create(user=other_user, name="Secret Exercise", is_public=False)
 
         res = self.client.get(EXERCISES_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]["name"], exercise.name)
-        self.assertEqual(res.data[0]["id"], exercise.id)
+
+        returned_ids = [item["id"] for item in res.data]
+        self.assertIn(private_own.id, returned_ids)
+        self.assertIn(public_admin.id, returned_ids)
+        self.assertNotIn(private_other.id, returned_ids)
+
+    def test_exercises_limited_to_user_and_public_exercises(self):
+        """Ensure the exercise list returns the user's own exercises and public exercises only."""
+        admin_user = create_user(email="admin@example.com", is_staff=True)
+        user2 = create_user(email="user2@example.com")
+
+        private_other = Exercise.objects.create(user=user2, name="Salt", is_public=False)
+        private_own = Exercise.objects.create(user=self.user, name="Deadlift", is_public=False)
+        public_exercise = Exercise.objects.create(user=admin_user, name="Bench Press", is_public=True)
+
+        res = self.client.get(EXERCISES_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(res.data), 2)
+
+        returned_ids = [item["id"] for item in res.data]
+        self.assertIn(private_own.id, returned_ids)
+        self.assertIn(public_exercise.id, returned_ids)
+        self.assertNotIn(private_other.id, returned_ids)
 
     def test_update_exercise(self):
         """Verify that an authenticated user can update the name of their exercise."""
@@ -79,6 +154,18 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         exercise.refresh_from_db()
         self.assertEqual(exercise.name, payload["name"])
+
+    def test_user_cannot_make_exercise_public(self):
+        """Ensure a normal user cannot make their own exercise public."""
+        exercise = Exercise.objects.create(user=self.user, name="Push Ups", is_public=False)
+
+        payload = {"is_public": True}
+        url = exercise_detail_url(exercise.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        exercise.refresh_from_db()
+        self.assertFalse(exercise.is_public)
 
     def test_delete_exercise(self):
         """Ensure an authenticated user can delete their own exercise successfully."""
