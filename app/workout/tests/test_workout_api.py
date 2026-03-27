@@ -210,9 +210,9 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(workout.tags.count(), 0)
 
-    # # -----------------------------------------------------------------
-    # # EXERCISE RELATIONSHIP TESTS
-    # # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # EXERCISE RELATIONSHIP TESTS
+    # -----------------------------------------------------------------
 
     def test_create_workout_with_workout_exercises(self):
         """Test creating a workout with nested workout_exercises creates related rows."""
