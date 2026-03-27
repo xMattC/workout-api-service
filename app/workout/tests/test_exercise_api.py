@@ -53,7 +53,6 @@ class PrivateExercisesApiTests(TestCase):
         }
 
         res = self.client.post(EXERCISES_LIST_URL, payload)
-
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
         exercise = Exercise.objects.get(id=res.data["id"])
@@ -87,9 +86,9 @@ class PrivateExercisesApiTests(TestCase):
 
         res = self.client.get(EXERCISES_LIST_URL)
 
-        exercises = Exercise.objects.filter(user=self.user).union(
-            Exercise.objects.filter(is_public=True)
-        ).order_by("-name")
+        exercises = (
+            Exercise.objects.filter(user=self.user).union(Exercise.objects.filter(is_public=True)).order_by("-name")
+        )
         serializer = ExerciseSerializer(exercises, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
@@ -129,8 +128,8 @@ class PrivateExercisesApiTests(TestCase):
         admin_user = create_user(email="admin@example.com", is_staff=True)
         user2 = create_user(email="user2@example.com")
 
-        private_other = Exercise.objects.create(user=user2, name="Salt", is_public=False)
         private_own = Exercise.objects.create(user=self.user, name="Deadlift", is_public=False)
+        private_other = Exercise.objects.create(user=user2, name="Squats", is_public=False)
         public_exercise = Exercise.objects.create(user=admin_user, name="Bench Press", is_public=True)
 
         res = self.client.get(EXERCISES_LIST_URL)

@@ -21,7 +21,7 @@ class ExerciseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Exercise
-        fields = ["id", "name", "image"]
+        fields = ["id", "name", "image", "is_public"]
         read_only_fields = ["id"]
 
 
@@ -101,10 +101,12 @@ class TagSerializer(serializers.ModelSerializer):
 class WorkoutSerializer(serializers.ModelSerializer):
     """Serialise workout objects with nested input support.
 
-    Purpose Write operations (create/update):
-    - Accepts nested input for:
-        - tags (list of dicts)
-        - workout_exercises (list of dicts)
+    Purpose:
+    - Write operations (create/update)
+
+    Accepts nested input for:
+    - tags (list of dicts)
+    - workout_exercises (list of dicts)
 
     Key behaviour:
     - Nested relationships are replaced, not merged

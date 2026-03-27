@@ -6,6 +6,7 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
+from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
@@ -209,9 +210,18 @@ class ExerciseViewSet(BaseAttrViewSet):
     serializer_class = serializers.ExerciseSerializer
 
     def get_queryset(self):
-        """Return exercises for the authenticated user, with optional filtering."""
+        """Return exercises for the authenticated user, with optional filtering.
 
-        queryset = super().get_queryset()
+        Visibility rules:
+        - Include the user's own exercises
+        - Include public exercises created by any user
+        - Exclude private exercises owned by other users
+        """
+        user = self.request.user
+        own_exercises = self.queryset.filter(user=user)
+        public_exercises = self.queryset.filter(is_public=True)
+
+        queryset = (own_exercises | public_exercises).order_by("-name").distinct()
 
         # Check query param (e.g. /exercises/?assigned_only=1)
         # If set, only include exercises that are linked to at least one workout
@@ -225,14 +235,35 @@ class ExerciseViewSet(BaseAttrViewSet):
     def get_serializer_class(self):
         """Return the serializer class for the current action.
 
-        # Serializer behaviour:
-        # - upload_image      -> ExerciseImageSerializer
-        # - all other actions -> ExerciseSerializer
+        Serializer behaviour:
+        - upload_image      -> ExerciseImageSerializer
+        - all other actions -> ExerciseSerializer
         """
         if self.action == "upload_image":
             return serializers.ExerciseImageSerializer
 
         return serializers.ExerciseSerializer
+
+    def perform_create(self, serializer):
+        """Create an exercise for the authenticated user.
+
+        Normal users always create private exercises.
+        Admin users may create public exercises.
+        """
+        user = self.request.user
+
+        if user.is_staff:
+            serializer.save(user=user)  # Admin users can set is_public via the serializer input
+        else:
+            serializer.save(user=user, is_public=False)
+
+    def perform_update(self, serializer):
+        user = self.request.user
+
+        if user.is_staff:
+            serializer.save()  # Admin users can set is_public via the serializer input
+        else:
+            serializer.save(is_public=False)
 
     @EXERCISE_UPLOAD_IMAGE_SCHEMA
     @action(methods=["POST"], detail=True, url_path="upload-image")
