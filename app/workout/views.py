@@ -6,7 +6,6 @@ from drf_spectacular.utils import (
     extend_schema,
     extend_schema_view,
 )
-from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
