@@ -7,8 +7,9 @@ from workout import views
 
 router = DefaultRouter()
 router.register("workouts", views.WorkoutViewSet)
-router.register("tags", views.TagViewSet)
+router.register("workout-tags", views.WorkoutTagViewSet)
 router.register("exercises", views.ExerciseViewSet)
+router.register("exercise-tags", views.ExerciseTagViewSet)
 
 app_name = "workout"
 
