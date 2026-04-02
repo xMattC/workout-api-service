@@ -18,10 +18,7 @@ class ModelTests(TestCase):
         email = "test@example.com"
         password = "testpass123"
 
-        user = get_user_model().objects.create_user(
-            email=email,
-            password=password,
-        )
+        user = get_user_model().objects.create_user(email=email, password=password)
 
         self.assertEqual(user.email, email)
         self.assertTrue(user.check_password(password))
@@ -46,10 +43,7 @@ class ModelTests(TestCase):
 
     def test_create_superuser(self):
         """Verify that a superuser is created with correct permissions."""
-        user = get_user_model().objects.create_superuser(
-            "test@example.com",
-            "test123",
-        )
+        user = get_user_model().objects.create_superuser("test@example.com", "test123")
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
@@ -70,35 +64,32 @@ class ModelTests(TestCase):
         """Verify workout exercise is created and string representation is correct."""
         user = create_user()
 
-        workout = models.Workout.objects.create(
-            user=user,
-            title="Sample workout",
-            duration_minutes=60,
-        )
-
+        workout = models.Workout.objects.create(user=user, title="Sample workout", duration_minutes=60)
         exercise = models.Exercise.objects.create(
             user=user,
             name="Push-up",
         )
-
         workout_exercise = models.WorkoutExercise.objects.create(
-            workout=workout,
-            exercise=exercise,
-            order=1,
-            sets=3,
-            reps=10,
-            rest_seconds=60,
+            workout=workout, exercise=exercise, order=1, sets=3, reps=10, rest_seconds=60
         )
 
         expected_str = f"{workout.title} - {exercise.name} (1)"
 
         self.assertEqual(str(workout_exercise), expected_str)
 
-    def test_create_tag(self):
+    def test_create_exercise_tag(self):
+        """Verify that a tag is created successfully and string representation returns its name."""
+        user = create_user()
+        tag = models.ExerciseTag.objects.create(user=user, name="Tag_name", type="equipment")
+
+        self.assertEqual("Tag_name", tag.name)
+        self.assertEqual("equipment", tag.type)
+
+    def test_create_workout_tag(self):
         """Verify that a tag is created successfully and string representation returns its name."""
         user = create_user()
 
-        tag = models.Tag.objects.create(user=user, name="Tag1")
+        tag = models.WorkoutTag.objects.create(user=user, name="Tag1")
 
         self.assertEqual(str(tag), tag.name)
 

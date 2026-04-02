@@ -62,6 +62,30 @@ class WorkoutAdmin(admin.ModelAdmin):
     list_display = ["id", "title", "user", "duration_minutes"]
 
 
+class WorkoutTagAdmin(admin.ModelAdmin):
+    """Customise the WorkoutTag admin list view."""
+
+    list_display = ["id", "name", "user"]
+    list_filter = ["user"]
+    ordering = ["user", "name"]
+
+
+class ExerciseAdmin(admin.ModelAdmin):
+    """Customise the Exercise admin page."""
+
+    list_display = ["id", "name", "user", "difficulty", "is_public"]
+    list_filter = ["user", "difficulty", "is_public"]
+    ordering = ["user", "name"]
+
+
+class ExerciseTagAdmin(admin.ModelAdmin):
+    """Customise the ExerciseTag admin list view."""
+
+    list_display = ["id", "name", "user"]
+    list_filter = ["user"]
+    ordering = ["user", "name"]
+
+
 class WorkoutExerciseAdmin(admin.ModelAdmin):
     """Customise the WorkoutExercise admin list view."""
 
@@ -80,6 +104,7 @@ class WorkoutExerciseAdmin(admin.ModelAdmin):
 
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.Workout, WorkoutAdmin)
-admin.site.register(models.Tag)
-admin.site.register(models.Exercise)
+admin.site.register(models.WorkoutTag, WorkoutTagAdmin)
+admin.site.register(models.Exercise, ExerciseAdmin)
+admin.site.register(models.ExerciseTag, ExerciseTagAdmin)
 admin.site.register(models.WorkoutExercise, WorkoutExerciseAdmin)

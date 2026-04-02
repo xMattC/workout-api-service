@@ -2,7 +2,7 @@ import logging
 
 from rest_framework import serializers
 
-from core.models import Exercise, Tag, Workout, WorkoutExercise
+from core.models import Exercise, WorkoutTag, ExerciseTag, Workout, WorkoutExercise
 
 logger = logging.getLogger(__name__)
 
@@ -11,32 +11,166 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------
 
 
+class ExerciseTagSerializer(serializers.ModelSerializer):
+    """Serialise tag objects.
+
+    Used for:
+    - Nested input when creating/updating exercises
+    - Nested output when returning exercise data
+    """
+
+    class Meta:
+        model = ExerciseTag
+        fields = ["id", "name", "type"]
+        read_only_fields = ["id"]
+
+
 class ExerciseSerializer(serializers.ModelSerializer):
     """Serialise exercise objects for general API usage.
 
     Used for:
     - General read/write of Exercise objects
     - Nested display inside other serializers (e.g. workout detail)
+
+    Accepts nested input for:
+    - ex_tags (list of dicts)
+
+    Key behaviour:
+    - Tags are replaced, not merged
     """
+
+    ex_tags = ExerciseTagSerializer(many=True, required=False)
 
     class Meta:
         model = Exercise
-        fields = ["id", "name", "image", "is_public"]
+        fields = ["id", "name", "image_1", "image_2", "is_public", "difficulty", "ex_tags"]
         read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        """Validate exercise creation/update rules.
+
+        Rules:
+        - Non-staff users cannot set is_public=True
+        """
+
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Check if user is trying to set a public exercise
+        if attrs.get("is_public") is True:
+            if not user or not user.is_staff:
+                raise serializers.ValidationError(
+                    {"error_is_public": "You cannot create or update a public exercise. is_public must be False!"}
+                )
+
+        return attrs
+
+    # -----------------------------------------------------------------
+    # TAG HELPERS
+    # -----------------------------------------------------------------
+
+    def _get_or_create_tags(self, ex_tags, exercise):
+        """Retrieve or create tag objects and assign them to the exercise.
+
+        Parameters:
+        - ex_tags: list of dicts, e.g. [{"name": "chest", "type": "muscle"}]
+        - exercise: Exercise instance to attach ex_tags to
+
+        Behaviour:
+        - Creates tag if it does not exist for the user
+        - Associates tag with exercise
+        """
+
+        auth_user = self.context["request"].user
+
+        for tag in ex_tags:
+            logger.debug("Processing exercise tag payload: %s", tag)
+
+            tag_obj, created = ExerciseTag.objects.get_or_create(user=auth_user, **tag)
+
+            if created:
+                logger.info("Created tag '%s' (%s) for user_id=%s", tag_obj.name, tag_obj.type, auth_user.id)
+
+            exercise.ex_tags.add(tag_obj)
+
+        logger.debug(
+            "Final ex_tags on exercise_id=%s: %s",
+            exercise.id,
+            list(exercise.ex_tags.values_list("name", flat=True)),
+        )
+
+    # -----------------------------------------------------------------
+    # CREATE
+    # -----------------------------------------------------------------
+
+    def create(self, validated_data):
+        """Create a new exercise with optional nested ex_tags.
+
+        Behaviour:
+        - Extract nested fields from validated_data
+        - Create base exercise
+        - Attach ex_tags separately
+        """
+
+        ex_tags = validated_data.pop("ex_tags", [])
+        exercise = Exercise.objects.create(**validated_data)
+
+        logger.info("Exercise created id=%s", exercise.id)
+
+        self._get_or_create_tags(ex_tags, exercise)
+
+        return exercise
+
+    # -----------------------------------------------------------------
+    # UPDATE
+    # -----------------------------------------------------------------
+
+    def update(self, instance, validated_data):
+        """Update an existing exercise.
+
+        Behaviour:
+        - ex_tags:
+            - if provided → replace all ex_tags
+            - if omitted → leave unchanged
+        """
+
+        ex_tags = validated_data.pop("ex_tags", None)
+        logger.debug("Exercise update called with ex_tags=%s", ex_tags)
+
+        # Replace ex_tags if explicitly provided
+        if ex_tags is not None:
+            instance.ex_tags.clear()
+            self._get_or_create_tags(ex_tags, instance)
+
+        # Update remaining scalar fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        logger.info("Exercise updated id=%s", instance.id)
+
+        return instance
 
 
 class ExerciseImageSerializer(serializers.ModelSerializer):
-    """Serialise exercise image uploads only.
+    """Serialise exercise image uploads.
 
     Used by custom endpoint (e.g. POST /exercises/<id>/upload-image/).
-    Restricts input to image field only.
+
+    Behaviour:
+    - Allows updating image_1 and/or image_2
+    - Both fields are optional (partial updates supported)
     """
 
     class Meta:
         model = Exercise
-        fields = ["id", "image"]
+        fields = ["id", "image_1", "image_2"]
         read_only_fields = ["id"]
-        extra_kwargs = {"image": {"required": True}}
+        extra_kwargs = {
+            "image_1": {"required": False},
+            "image_2": {"required": False},
+        }
 
 
 # ---------------------------------------------------------------------
@@ -74,21 +208,16 @@ class WorkoutExerciseDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-# ---------------------------------------------------------------------
-# TAG SERIALISER
-# ---------------------------------------------------------------------
-
-
-class TagSerializer(serializers.ModelSerializer):
+class WorkoutTagSerializer(serializers.ModelSerializer):
     """Serialise tag objects.
 
     Used for:
-    - Nested input (create/update)
-    - Nested output (read)
+    - Nested input when creating/updating workouts
+    - Nested output when returning workout data
     """
 
     class Meta:
-        model = Tag
+        model = WorkoutTag
         fields = ["id", "name"]
         read_only_fields = ["id"]
 
@@ -105,7 +234,7 @@ class WorkoutSerializer(serializers.ModelSerializer):
     - Write operations (create/update)
 
     Accepts nested input for:
-    - tags (list of dicts)
+    - wo_tags (list of dicts)
     - workout_exercises (list of dicts)
 
     Key behaviour:
@@ -114,23 +243,23 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
     # Nested writable fields (input format)
     workout_exercises = WorkoutExerciseSerializer(many=True, required=False)
-    tags = TagSerializer(many=True, required=False)
+    wo_tags = WorkoutTagSerializer(many=True, required=False)
 
     class Meta:
         model = Workout
-        fields = ["id", "title", "description", "duration_minutes", "tags", "workout_exercises"]
+        fields = ["id", "title", "description", "duration_minutes", "wo_tags", "workout_exercises"]
         read_only_fields = ["id"]
 
     # -----------------------------------------------------------------
     # TAG HELPERS
     # -----------------------------------------------------------------
 
-    def _get_or_create_tags(self, tags, workout):
+    def _get_or_create_tags(self, wo_tags, workout):
         """Retrieve or create tag objects and assign them to the workout.
 
         Parameters:
-        - tags: list of dicts, e.g. [{"name": "Leg Day"}]
-        - workout: Workout instance to attach tags to
+        - wo_tags: list of dicts, e.g. [{"name": "Leg Day"}]
+        - workout: Workout instance to attach wo_tags to
 
         Behaviour:
         - Creates tag if it does not exist for the user
@@ -139,20 +268,20 @@ class WorkoutSerializer(serializers.ModelSerializer):
 
         auth_user = self.context["request"].user
 
-        for tag in tags:
+        for tag in wo_tags:
             logger.debug("Processing tag payload: %s", tag)
 
-            tag_obj, created = Tag.objects.get_or_create(user=auth_user, **tag)
+            tag_obj, created = WorkoutTag.objects.get_or_create(user=auth_user, **tag)
 
             if created:
                 logger.info("Created tag '%s' for user_id=%s", tag_obj.name, auth_user.id)
 
-            workout.tags.add(tag_obj)
+            workout.wo_tags.add(tag_obj)
 
         logger.debug(
-            "Final tags on workout_id=%s: %s",
+            "Final wo_tags on workout_id=%s: %s",
             workout.id,
-            list(workout.tags.values_list("name", flat=True)),
+            list(workout.wo_tags.values_list("name", flat=True)),
         )
 
     # -----------------------------------------------------------------
@@ -180,17 +309,17 @@ class WorkoutSerializer(serializers.ModelSerializer):
         Behaviour:
         - Extract nested fields from validated_data
         - Create base workout
-        - Attach tags and exercises separately
+        - Attach wo_tags and exercises separately
         """
 
-        tags = validated_data.pop("tags", [])
+        wo_tags = validated_data.pop("wo_tags", [])
         workout_exercises = validated_data.pop("workout_exercises", [])
 
         workout = Workout.objects.create(**validated_data)
 
         logger.info("Workout created id=%s", workout.id)
 
-        self._get_or_create_tags(tags, workout)
+        self._get_or_create_tags(wo_tags, workout)
         self._create_workout_exercises(workout_exercises, workout)
 
         return workout
@@ -203,8 +332,8 @@ class WorkoutSerializer(serializers.ModelSerializer):
         """Update an existing workout.
 
         Behaviour:
-        - tags:
-            - if provided → replace all tags
+        - wo_tags:
+            - if provided → replace all wo_tags
             - if omitted → leave unchanged
 
         - workout_exercises:
@@ -213,15 +342,15 @@ class WorkoutSerializer(serializers.ModelSerializer):
             - if omitted → leave unchanged
         """
 
-        tags = validated_data.pop("tags", None)
+        wo_tags = validated_data.pop("wo_tags", None)
         workout_exercises = validated_data.pop("workout_exercises", None)
 
-        logger.debug("Update called with tags=%s", tags)
+        logger.debug("Update called with wo_tags=%s", wo_tags)
 
-        # Replace tags if explicitly provided
-        if tags is not None:
-            instance.tags.clear()
-            self._get_or_create_tags(tags, instance)
+        # Replace wo_tags if explicitly provided
+        if wo_tags is not None:
+            instance.wo_tags.clear()
+            self._get_or_create_tags(wo_tags, instance)
 
         # Replace exercises if explicitly provided
         if workout_exercises is not None:

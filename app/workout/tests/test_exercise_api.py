@@ -1,11 +1,14 @@
+import tempfile
+
+from PIL import Image
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import Exercise, Workout, WorkoutExercise
 from workout.serializers import ExerciseSerializer
-from workout.tests.helpers import create_user, create_workout, create_workout_exercise
-from workout.tests.urls import EXERCISES_LIST_URL, exercise_detail_url
+from workout.tests.helpers import create_user, create_workout, create_exercise, create_workout_exercise
+from workout.tests.urls import EXERCISES_LIST_URL, exercise_detail_url, exercise_image_upload_url
 
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
@@ -94,16 +97,14 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
-    def test_create_exercise_always_private(self):
-        """Ensure a normal user creates exercises as private, even if is_public is sent."""
+    def test_user_can_not_create_a_public_exercise(self):
+        """Ensure a normal user cannot create a public exercise."""
         payload = {"name": "Bench Press", "is_public": True}
         res = self.client.post(EXERCISES_LIST_URL, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-
-        exercise = Exercise.objects.get(id=res.data["id"])
-        self.assertEqual(exercise.user, self.user)
-        self.assertFalse(exercise.is_public)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Exercise.objects.count(), 0)
+        self.assertIn("error_is_public", res.data)
 
     def test_retrieve_exercises_includes_user_private_and_public(self):
         """Ensure the exercise list includes the user's private exercises and public exercises."""
@@ -162,7 +163,7 @@ class PrivateExercisesApiTests(TestCase):
         url = exercise_detail_url(exercise.id)
         res = self.client.patch(url, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         exercise.refresh_from_db()
         self.assertFalse(exercise.is_public)
 
@@ -207,3 +208,104 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data[0]["id"], exercise.id)
         self.assertEqual(res.data[0]["name"], exercise.name)
+
+
+class ImageUploadTests(TestCase):
+    """Test exercise image upload functionality."""
+
+    def setUp(self):
+        """Set up authenticated client and sample exercise."""
+        self.client = APIClient()
+        self.user = create_user(email="user@example.com", password="password123")
+        self.client.force_authenticate(self.user)
+        self.exercise = create_exercise(user=self.user)
+
+    def tearDown(self):
+        """Clean up uploaded image files after each test."""
+        if self.exercise.image_1:
+            self.exercise.image_1.delete(save=False)
+        if self.exercise.image_2:
+            self.exercise.image_2.delete(save=False)
+
+    # -----------------------------------------------------------------
+    # SINGLE IMAGE UPLOAD
+    # -----------------------------------------------------------------
+
+    def test_upload_image_1(self):
+        """Ensure image_1 can be uploaded."""
+        url = exercise_image_upload_url(self.exercise.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
+            img = Image.new("RGB", (10, 10))
+            img.save(image_file, format="JPEG")
+            image_file.seek(0)
+
+            payload = {"image_1": image_file}
+            res = self.client.post(url, payload, format="multipart")
+
+        self.exercise.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("image_1", res.data)
+        self.assertTrue(self.exercise.image_1)
+
+    def test_upload_image_2(self):
+        """Ensure image_2 can be uploaded."""
+        url = exercise_image_upload_url(self.exercise.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
+            img = Image.new("RGB", (10, 10))
+            img.save(image_file, format="JPEG")
+            image_file.seek(0)
+
+            payload = {"image_2": image_file}
+            res = self.client.post(url, payload, format="multipart")
+
+        self.exercise.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertIn("image_2", res.data)
+        self.assertTrue(self.exercise.image_2)
+
+    # -----------------------------------------------------------------
+    # BOTH IMAGES UPLOAD
+    # -----------------------------------------------------------------
+
+    def test_upload_both_images(self):
+        """Ensure both images can be uploaded in one request."""
+        url = exercise_image_upload_url(self.exercise.id)
+
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as img1, tempfile.NamedTemporaryFile(suffix=".jpg") as img2:
+
+            image1 = Image.new("RGB", (10, 10))
+            image1.save(img1, format="JPEG")
+            img1.seek(0)
+
+            image2 = Image.new("RGB", (10, 10))
+            image2.save(img2, format="JPEG")
+            img2.seek(0)
+
+            payload = {
+                "image_1": img1,
+                "image_2": img2,
+            }
+            res = self.client.post(url, payload, format="multipart")
+
+        self.exercise.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.exercise.image_1)
+        self.assertTrue(self.exercise.image_2)
+
+    # -----------------------------------------------------------------
+    # INVALID INPUT
+    # -----------------------------------------------------------------
+
+    def test_upload_image_bad_request(self):
+        """Verify invalid image upload returns 400."""
+        url = exercise_image_upload_url(self.exercise.id)
+
+        payload = {"image_1": "notanimage"}
+        res = self.client.post(url, payload, format="multipart")
+
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

@@ -1,14 +1,10 @@
-import tempfile
-import os
-
-from PIL import Image
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Workout, Tag
+from core.models import Workout, WorkoutTag
 from workout.serializers import WorkoutSerializer, WorkoutDetailSerializer
-from workout.tests.urls import WORKOUTS_LIST_URL, workout_detail_url, exercise_image_upload_url
+from workout.tests.urls import WORKOUTS_LIST_URL, workout_detail_url
 from workout.tests.helpers import create_user, create_workout, create_exercise, create_workout_exercise
 
 # ---------------------------------------------------------------------
@@ -170,45 +166,45 @@ class PrivateWorkoutApiTests(TestCase):
     # -----------------------------------------------------------------
 
     def test_create_tag_on_update(self):
-        """Verify that new tags are created and assigned when included in a workout update payload."""
+        """Verify that new wo_tags are created and assigned when included in a workout update payload."""
         workout = create_workout(user=self.user)
 
-        payload = {"tags": [{"name": "Leg Day"}]}
+        payload = {"wo_tags": [{"name": "Leg Day"}]}
         url = workout_detail_url(workout.id)
         res = self.client.patch(url, payload, format="json")
         # print(f"DATA: {res.data}\n", flush=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        check_tag = Tag.objects.get(user=self.user, name="Leg Day")
-        self.assertIn(check_tag, workout.tags.all())
+        check_tag = WorkoutTag.objects.get(user=self.user, name="Leg Day")
+        self.assertIn(check_tag, workout.wo_tags.all())
 
     def test_update_workout_assign_tag(self):
-        """Ensure existing tags can be reassigned on update and previous tags are removed."""
-        tag_existing = Tag.objects.create(user=self.user, name="Leg Day")
+        """Ensure existing wo_tags can be reassigned on update and previous wo_tags are removed."""
+        tag_existing = WorkoutTag.objects.create(user=self.user, name="Leg Day")
         workout = create_workout(user=self.user)
-        workout.tags.add(tag_existing)
+        workout.wo_tags.add(tag_existing)
 
-        tag_new = Tag.objects.create(user=self.user, name="Back Day")
-        payload = {"tags": [{"name": "Back Day"}]}
+        tag_new = WorkoutTag.objects.create(user=self.user, name="Back Day")
+        payload = {"wo_tags": [{"name": "Back Day"}]}
         url = workout_detail_url(workout.id)
         res = self.client.patch(url, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(tag_new, workout.tags.all())
-        self.assertNotIn(tag_existing, workout.tags.all())
+        self.assertIn(tag_new, workout.wo_tags.all())
+        self.assertNotIn(tag_existing, workout.wo_tags.all())
 
     def test_clear_workout_tags(self):
-        """Verify that providing an empty tag list removes all tags from the workout."""
-        tag = Tag.objects.create(user=self.user, name="Cardio-run")
+        """Verify that providing an empty wo_tags list removes all wo_tags from the workout."""
+        tag = WorkoutTag.objects.create(user=self.user, name="Cardio-run")
         workout = create_workout(user=self.user)
-        workout.tags.add(tag)
+        workout.wo_tags.add(tag)
 
-        payload = {"tags": []}
+        payload = {"wo_tags": []}
         url = workout_detail_url(workout.id)
         res = self.client.patch(url, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(workout.tags.count(), 0)
+        self.assertEqual(workout.wo_tags.count(), 0)
 
     # -----------------------------------------------------------------
     # EXERCISE RELATIONSHIP TESTS
@@ -337,23 +333,23 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertEqual(items[0].exercise, exercise_1)
         self.assertEqual(items[1].exercise, exercise_2)
 
-    # # -----------------------------------------------------------------
-    # # WORKOUT FILTERING TESTS
-    # # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+    # WORKOUT FILTERING TESTS
+    # -----------------------------------------------------------------
 
     def test_filter_by_tags(self):
         """Test filitering by ensuring that only workouts associated with any of the specified tag IDs are returned."""
         wo1 = create_workout(user=self.user, title="Monday - Chest and Back")
-        tag1 = Tag.objects.create(user=self.user, name="upper body")
-        wo1.tags.add(tag1)
+        tag1 = WorkoutTag.objects.create(user=self.user, name="upper body")
+        wo1.wo_tags.add(tag1)
 
         wo2 = create_workout(user=self.user, title="Wednesday - Legs")
-        tag2 = Tag.objects.create(user=self.user, name="lower body")
-        wo2.tags.add(tag2)
+        tag2 = WorkoutTag.objects.create(user=self.user, name="lower body")
+        wo2.wo_tags.add(tag2)
 
         wo3 = create_workout(user=self.user, title="Friday - Arms and Shoulders")
 
-        params = {"tags": f"{tag1.id},{tag2.id}"}
+        params = {"wo_tags": f"{tag1.id},{tag2.id}"}
         res = self.client.get(WORKOUTS_LIST_URL, params)
 
         s1 = WorkoutSerializer(wo1)
@@ -384,49 +380,3 @@ class PrivateWorkoutApiTests(TestCase):
         self.assertIn(s1.data, res.data)
         self.assertIn(s2.data, res.data)
         self.assertNotIn(s3.data, res.data)
-
-
-# ---------------------------------------------------------------------
-# MEDIA UPLOAD TESTS
-# ---------------------------------------------------------------------
-
-class ImageUploadTests(TestCase):
-    """Test exercise image upload functionality."""
-
-    def setUp(self):
-        """Set up authenticated client and sample exercise."""
-        self.client = APIClient()
-        self.user = create_user(email="user@example.com", password="password123")
-        self.client.force_authenticate(self.user)
-        self.exercise = create_exercise(user=self.user)
-
-    def tearDown(self):
-        """Clean up uploaded image files after each test."""
-        self.exercise.image.delete()
-
-    def test_upload_image(self):
-        """Ensure a valid image can be uploaded and stored for a workout."""
-        url = exercise_image_upload_url(self.exercise.id)
-
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
-            img = Image.new("RGB", (10, 10))
-            img.save(image_file, format="JPEG")
-            image_file.seek(0)
-
-            payload = {"image": image_file}
-            res = self.client.post(url, payload, format="multipart")
-
-        self.exercise.refresh_from_db()
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn("image", res.data)
-        self.assertTrue(os.path.exists(self.exercise.image.path))
-
-    def test_upload_image_bad_request(self):
-        """Verify that uploading invalid image data returns a 400 error."""
-        url = exercise_image_upload_url(self.exercise.id)
-
-        payload = {"image": "notanimage"}
-        res = self.client.post(url, payload, format="multipart")
-
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

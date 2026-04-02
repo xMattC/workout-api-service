@@ -30,7 +30,9 @@ def create_exercise(user, **params):
     """Create and return a sample exercise."""
     defaults = {
         "name": "Sample exercise",
-        "image": None,
+        "image_1": None,
+        "image_2": None,
+        "is_public": False,
     }
     defaults.update(params)
 

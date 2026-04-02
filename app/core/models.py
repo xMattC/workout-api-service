@@ -86,14 +86,24 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Workout(models.Model):
     """Entity model - Workout object."""
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="workouts")
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     duration_minutes = models.IntegerField()  # TODO: Temporary field — later derived from WorkoutExercise
-    tags = models.ManyToManyField("Tag")
+    wo_tags = models.ManyToManyField("WorkoutTag", blank=True, related_name="workouts")
 
     def __str__(self):
         return self.title
+
+
+class WorkoutTag(models.Model):
+    """Entity model - Tag for filtering workouts."""
+
+    name = models.CharField(max_length=255)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="workout_tags")
+
+    def __str__(self):
+        return self.name
 
 
 class WorkoutExercise(models.Model):
@@ -112,22 +122,58 @@ class WorkoutExercise(models.Model):
 
 
 class Exercise(models.Model):
-    """Entity model - Exercise for workouts."""
+    """Exercise model representing a workout movement."""
 
     name = models.CharField(max_length=255)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    image = models.ImageField(null=True, upload_to=exercise_image_file_path)
-    is_public = models.BooleanField(default=False)  # If true, exercise is visible to all users
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="exercises")
+    image_1 = models.ImageField(null=True, blank=True, upload_to=exercise_image_file_path)
+    image_2 = models.ImageField(null=True, blank=True, upload_to=exercise_image_file_path)
+    is_public = models.BooleanField(default=False)
+
+    DIFFICULTY_BEGINNER = "beginner"
+    DIFFICULTY_INTERMEDIATE = "intermediate"
+    DIFFICULTY_ADVANCED = "advanced"
+    DIFFICULTY_CHOICES = [
+        (DIFFICULTY_BEGINNER, "Beginner"),
+        (DIFFICULTY_INTERMEDIATE, "Intermediate"),
+        (DIFFICULTY_ADVANCED, "Advanced"),
+    ]
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_CHOICES, default=DIFFICULTY_BEGINNER)
+
+    ex_tags = models.ManyToManyField("ExerciseTag", blank=True, related_name="exercises")
 
     def __str__(self):
         return self.name
 
 
-class Tag(models.Model):
-    """Entity model - Tag for filtering workouts."""
+class ExerciseTag(models.Model):
+    """Tag model used to classify and filter exercises."""
+
+    TYPE_EQUIPMENT = "equipment"  # E.g. "Dumbbell", "Barbell", "Kettlebell", "Bodyweight"
+    TYPE_CATEGORY = "category"  # E.g. "Strength", "Cardio", "olympic weightlifting", "Mobility"
+    PRIMARY_MUSCLE = "primary_muscle"  # E.g. "Quadriceps"
+    SECONDARY_MUSCLE = "secondary_muscle"  # E.g. "calves", "glutes", "hamstrings""
+
+    TAG_TYPE_CHOICES = [
+        (TYPE_EQUIPMENT, "Equipment"),
+        (TYPE_CATEGORY, "Category"),
+        (PRIMARY_MUSCLE, "Primary Muscle"),
+        (SECONDARY_MUSCLE, "Secondary Muscle"),
+    ]
 
     name = models.CharField(max_length=255)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    type = models.CharField(max_length=50, choices=TAG_TYPE_CHOICES)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="exercise_tags",
+    )
+    is_system = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("user", "name", "type")
 
     def __str__(self):
-        return self.name
+        return f"{self.name} ({self.type})"
