@@ -1,29 +1,27 @@
-import tempfile
-
-from PIL import Image
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Exercise, Workout, WorkoutExercise, ExerciseTag
-from workout.serializers import ExerciseSerializer
-from workout.tests.helpers import create_user, create_workout, create_exercise, create_workout_exercise
-from workout.tests.urls import EXERCISES_LIST_URL, exercise_detail_url, exercise_image_upload_url
+from core.models import Exercise, ExerciseTag
+from workout.serializers import ExerciseTagSerializer
+from workout.tests.helpers import create_user
+from workout.tests.urls import EXERCISE_TAGS_LIST_URL, EXERCISES_LIST_URL, exercise_tag_detail_url
+
 
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
 # ---------------------------------------------------------------------
 
 
-class PublicExercisesApiTests(TestCase):
-    """Test unauthenticated access to exercise endpoints."""
+class PublicExerciseTagsApiTests(TestCase):
+    """Test unauthenticated access to exercise tag endpoints."""
 
     def setUp(self):
         self.client = APIClient()
 
     def test_auth_required(self):
-        """Ensure authentication is required to access the exercise list endpoint."""
-        res = self.client.get(EXERCISES_LIST_URL)
+        """Ensure authentication is required to access the exercise tag list endpoint."""
+        res = self.client.get(EXERCISE_TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
 
@@ -33,8 +31,8 @@ class PublicExercisesApiTests(TestCase):
 # ---------------------------------------------------------------------
 
 
-class PrivateExercisesApiTests(TestCase):
-    """Test authenticated interactions with the exercise API."""
+class PrivateExerciseTagsApiTests(TestCase):
+    """Test authenticated interactions with the exercise tag API."""
 
     def setUp(self):
         self.user = create_user()
@@ -45,365 +43,320 @@ class PrivateExercisesApiTests(TestCase):
     # BASIC CRUD
     # -----------------------------------------------------------------
 
-    def test_admin_can_create_public_exercise(self):
-        """Ensure an admin user can create a public exercise."""
-        admin_user = create_user(email="admin@example.com", is_staff=True)
-        self.client.force_authenticate(admin_user)
+    def test_retrieve_exercise_tags(self):
+        """Verify that an authenticated user can retrieve their custom exercise tags."""
+        tag1 = ExerciseTag.objects.create(
+            user=self.user,
+            name="Chest",
+            type=ExerciseTag.PRIMARY_MUSCLE,
+        )
+        tag2 = ExerciseTag.objects.create(
+            user=self.user,
+            name="Dumbbell",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+        )
 
+        res = self.client.get(EXERCISE_TAGS_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        returned_ids = [item["id"] for item in res.data]
+        self.assertIn(tag1.id, returned_ids)
+        self.assertIn(tag2.id, returned_ids)
+
+    def test_create_exercise_tag(self):
+        """Verify that an authenticated user can create a custom exercise tag."""
         payload = {
-            "name": "Bench Press",
-            "is_public": True,
+            "name": "Strength",
+            "type": ExerciseTag.TYPE_CATEGORY,
         }
 
-        res = self.client.post(EXERCISES_LIST_URL, payload)
+        res = self.client.post(EXERCISE_TAGS_LIST_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
 
-        exercise = Exercise.objects.get(id=res.data["id"])
-        self.assertEqual(exercise.user, admin_user)
-        self.assertTrue(exercise.is_public)
+        tag = ExerciseTag.objects.get(id=res.data["id"])
+        self.assertEqual(tag.user, self.user)
+        self.assertEqual(tag.name, payload["name"])
+        self.assertEqual(tag.type, payload["type"])
+        self.assertFalse(tag.is_system)
 
-    def test_admin_can_create_private_exercise(self):
-        """Ensure admin can also create private exercises if needed."""
-        admin_user = create_user(email="admin@example.com", is_staff=True)
-        self.client.force_authenticate(admin_user)
+    def test_update_exercise_tag(self):
+        """Verify that an authenticated user can update their own custom exercise tag."""
+        tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Biceps",
+            type=ExerciseTag.PRIMARY_MUSCLE,
+        )
 
-        payload = {
-            "name": "Custom Move",
-            "is_public": False,
-        }
-
-        res = self.client.post(EXERCISES_LIST_URL, payload)
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-
-        exercise = Exercise.objects.get(id=res.data["id"])
-        self.assertFalse(exercise.is_public)
-
-    def test_create_exercise_always_private(self):
-        """Ensure a normal user creates exercises as private, even if is_public is sent."""
-        payload = {"name": "Bench Press", "is_public": True}
-        res = self.client.post(EXERCISES_LIST_URL, payload)
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-
-        exercise = Exercise.objects.get(id=res.data["id"])
-        self.assertEqual(exercise.user, self.user)
-        self.assertFalse(exercise.is_public)
-
-    def test_update_exercise(self):
-        """Verify that an authenticated user can update the name of their exercise."""
-        exercise = Exercise.objects.create(user=self.user, name="Push Ups")
-
-        payload = {"name": "Bench Press"}
-        url = exercise_detail_url(exercise.id)
+        payload = {"name": "Triceps"}
+        url = exercise_tag_detail_url(tag.id)
         res = self.client.patch(url, payload)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        exercise.refresh_from_db()
-        self.assertEqual(exercise.name, payload["name"])
 
-    def test_user_cannot_make_exercise_public(self):
-        """Ensure a normal user cannot make their own exercise public."""
-        exercise = Exercise.objects.create(user=self.user, name="Push Ups", is_public=False)
+        tag.refresh_from_db()
+        self.assertEqual(tag.name, payload["name"])
+        self.assertEqual(tag.type, ExerciseTag.PRIMARY_MUSCLE)
 
-        payload = {"is_public": True}
-        url = exercise_detail_url(exercise.id)
-        res = self.client.patch(url, payload)
+    def test_delete_exercise_tag(self):
+        """Ensure an authenticated user can delete their own custom exercise tag."""
+        tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Mobility",
+            type=ExerciseTag.TYPE_CATEGORY,
+        )
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        exercise.refresh_from_db()
-        self.assertFalse(exercise.is_public)
-
-    def test_delete_exercise(self):
-        """Ensure an authenticated user can delete their own exercise successfully."""
-        exercise = Exercise.objects.create(user=self.user, name="Sit ups")
-
-        url = exercise_detail_url(exercise.id)
+        url = exercise_tag_detail_url(tag.id)
         res = self.client.delete(url)
 
         self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
-        exercises = Exercise.objects.filter(user=self.user)
-        self.assertFalse(exercises.exists())
+        self.assertFalse(ExerciseTag.objects.filter(id=tag.id).exists())
 
-    # -----------------------------------------------------------------
-    # VISIBILITY AND ACCESS RULES
-    # -----------------------------------------------------------------
-
-    def test_retrieve_exercises(self):
-        """Verify that an authenticated user can retrieve their own exercises and public exercises."""
-        admin_user = create_user(email="admin@example.com", is_staff=True)
-
-        Exercise.objects.create(user=self.user, name="Bench Press", is_public=False)
-        Exercise.objects.create(user=self.user, name="Squats", is_public=False)
-        Exercise.objects.create(user=admin_user, name="Push Up", is_public=True)
-
-        res = self.client.get(EXERCISES_LIST_URL)
-
-        exercises = (
-            Exercise.objects.filter(user=self.user).union(Exercise.objects.filter(is_public=True)).order_by("-name")
+    def test_filter_tags_assigned_to_exercises(self):
+        """Test listing exercise tags limited to those assigned to exercises."""
+        tag1 = ExerciseTag.objects.create(
+            user=self.user,
+            name="Quadriceps",
+            type=ExerciseTag.PRIMARY_MUSCLE,
         )
-        serializer = ExerciseSerializer(exercises, many=True)
+        tag2 = ExerciseTag.objects.create(
+            user=self.user,
+            name="Kettlebell",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+        )
+        exercise = Exercise.objects.create(
+            name="Goblet Squat",
+            user=self.user,
+        )
+        exercise.ex_tags.add(tag1)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        res = self.client.get(EXERCISE_TAGS_LIST_URL, {"assigned_only": 1})
 
-    def test_retrieve_exercises_includes_user_private_and_public(self):
-        """Ensure the exercise list includes the user's private exercises and public exercises."""
-        admin_user = create_user(email="admin@example.com", is_staff=True)
-        other_user = create_user(email="other@example.com")
-
-        private_own = Exercise.objects.create(user=self.user, name="My Deadlift", is_public=False)
-        public_admin = Exercise.objects.create(user=admin_user, name="Push Up", is_public=True)
-        private_other = Exercise.objects.create(user=other_user, name="Secret Exercise", is_public=False)
-
-        res = self.client.get(EXERCISES_LIST_URL)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-
-        returned_ids = [item["id"] for item in res.data]
-        self.assertIn(private_own.id, returned_ids)
-        self.assertIn(public_admin.id, returned_ids)
-        self.assertNotIn(private_other.id, returned_ids)
-
-    def test_user_cannot_access_other_users_private_exercise_detail(self):
-        """Ensure a user cannot retrieve another user's private exercise detail."""
-        other_user = create_user(email="other@example.com")
-        exercise = Exercise.objects.create(user=other_user, name="Secret Exercise", is_public=False)
-
-        url = exercise_detail_url(exercise.id)
-        res = self.client.get(url)
-
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-
-    def test_user_cannot_update_other_users_private_exercise(self):
-        """Ensure a user cannot update another user's private exercise."""
-        other_user = create_user(email="other@example.com")
-        exercise = Exercise.objects.create(user=other_user, name="Secret Exercise", is_public=False)
-
-        url = exercise_detail_url(exercise.id)
-        payload = {"name": "Hacked Name"}
-        res = self.client.patch(url, payload)
-
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-        exercise.refresh_from_db()
-        self.assertEqual(exercise.name, "Secret Exercise")
-
-    def test_user_cannot_delete_other_users_private_exercise(self):
-        """Ensure a user cannot delete another user's private exercise."""
-        other_user = create_user(email="other@example.com")
-        exercise = Exercise.objects.create(user=other_user, name="Secret Exercise", is_public=False)
-
-        url = exercise_detail_url(exercise.id)
-        res = self.client.delete(url)
-
-        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertTrue(Exercise.objects.filter(id=exercise.id).exists())
-
-    # -----------------------------------------------------------------
-    # FILTERING
-    # -----------------------------------------------------------------
-
-    def test_filter_exercises_assigned_to_workouts(self):
-        """Test listing exercises assigned to workouts only."""
-        ex1 = Exercise.objects.create(user=self.user, name="Lunges")
-        ex2 = Exercise.objects.create(user=self.user, name="Squats")
-        workout = Workout.objects.create(title="Leg Day", duration_minutes=55, user=self.user)
-
-        WorkoutExercise.objects.create(workout=workout, exercise=ex1, order=1, sets=3, reps=10, rest_seconds=60)
-
-        res = self.client.get(EXERCISES_LIST_URL, {"assigned_only": 1})
-
-        s1 = ExerciseSerializer(ex1)
-        s2 = ExerciseSerializer(ex2)
+        s1 = ExerciseTagSerializer(tag1)
+        s2 = ExerciseTagSerializer(tag2)
 
         self.assertIn(s1.data, res.data)
         self.assertNotIn(s2.data, res.data)
 
-    def test_assigned_only_returns_unique_exercise(self):
-        """Assigned filter returns each exercise once even if linked to multiple workouts."""
-        exercise = Exercise.objects.create(user=self.user, name="Squats")
-        workout1 = create_workout(user=self.user, title="Upper Body Workout", duration_minutes=45)
-        workout2 = create_workout(user=self.user, title="Lower Body Workout", duration_minutes=55)
-        create_workout_exercise(workout=workout1, exercise=exercise)
-        create_workout_exercise(workout=workout2, exercise=exercise)
-
-        res = self.client.get(EXERCISES_LIST_URL, {"assigned_only": 1})
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]["id"], exercise.id)
-        self.assertEqual(res.data[0]["name"], exercise.name)
-
-    def test_filter_exercises_by_ex_tags(self):
-        """Ensure filtering by ex_tags returns only exercises linked to the specified tag IDs."""
-        ex1 = create_exercise(user=self.user, name="Bench Press")
-        ex2 = create_exercise(user=self.user, name="Squat")
-        ex3 = create_exercise(user=self.user, name="Burpee")
-
-        tag1 = ExerciseTag.objects.create(user=self.user, name="Strength")
-        tag2 = ExerciseTag.objects.create(user=self.user, name="Lower Body")
-
-        ex1.ex_tags.add(tag1)
-        ex2.ex_tags.add(tag2)
-
-        res = self.client.get(EXERCISES_LIST_URL, {"ex_tags": f"{tag1.id},{tag2.id}"})
-
-        s1 = ExerciseSerializer(ex1)
-        s2 = ExerciseSerializer(ex2)
-        s3 = ExerciseSerializer(ex3)
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(s1.data, res.data)
-        self.assertIn(s2.data, res.data)
-        self.assertNotIn(s3.data, res.data)
-
-    def test_filter_exercises_by_assigned_only_and_ex_tags(self):
-        """Ensure assigned_only and ex_tags can be combined."""
-        workout = create_workout(user=self.user)
-
-        match_exercise = create_exercise(user=self.user, name="Bench Press")
-        assigned_only_exercise = create_exercise(user=self.user, name="Pull Up")
-        tag_only_exercise = create_exercise(user=self.user, name="Lateral Raise")
-
-        strength_tag = ExerciseTag.objects.create(user=self.user, name="Strength")
-
-        create_workout_exercise(workout=workout, exercise=match_exercise)
-        create_workout_exercise(workout=workout, exercise=assigned_only_exercise)
-
-        match_exercise.ex_tags.add(strength_tag)
-        tag_only_exercise.ex_tags.add(strength_tag)
-
-        res = self.client.get(
-            EXERCISES_LIST_URL,
-            {"assigned_only": 1, "ex_tags": str(strength_tag.id)},
+    def test_filtered_tags_unique(self):
+        """Test filtered exercise tags returns a unique list."""
+        tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Bodyweight",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+        )
+        ExerciseTag.objects.create(
+            user=self.user,
+            name="Cardio",
+            type=ExerciseTag.TYPE_CATEGORY,
         )
 
+        exercise1 = Exercise.objects.create(name="Push Up", user=self.user)
+        exercise2 = Exercise.objects.create(name="Pull Up", user=self.user)
+
+        exercise1.ex_tags.add(tag)
+        exercise2.ex_tags.add(tag)
+
+        res = self.client.get(EXERCISE_TAGS_LIST_URL, {"assigned_only": 1})
+
+        self.assertEqual(len(res.data), 1)
+
+    # -----------------------------------------------------------------
+    # EXTRA TESTS
+    # -----------------------------------------------------------------
+
+    def test_system_tags_visible_to_authenticated_user(self):
+        """Ensure system exercise tags are included in the list response."""
+        system_tag = ExerciseTag.objects.create(
+            name="Barbell",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+            is_system=True,
+        )
+        user_tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Hamstrings",
+            type=ExerciseTag.SECONDARY_MUSCLE,
+        )
+
+        res = self.client.get(EXERCISE_TAGS_LIST_URL)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
         returned_ids = [item["id"] for item in res.data]
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn(match_exercise.id, returned_ids)
-        self.assertNotIn(assigned_only_exercise.id, returned_ids)
-        self.assertNotIn(tag_only_exercise.id, returned_ids)
+        self.assertIn(system_tag.id, returned_ids)
+        self.assertIn(user_tag.id, returned_ids)
 
-
-# ---------------------------------------------------------------------
-# IMAGE UPLOAD TESTS
-# ---------------------------------------------------------------------
-
-
-class ImageUploadTests(TestCase):
-    """Test exercise image upload functionality."""
-
-    def setUp(self):
-        """Set up authenticated client and sample exercise."""
-        self.client = APIClient()
-        self.user = create_user(email="user@example.com", password="password123")
-        self.client.force_authenticate(self.user)
-        self.exercise = create_exercise(user=self.user)
-
-    def tearDown(self):
-        """Clean up uploaded image files after each test."""
-        if self.exercise.image_1:
-            self.exercise.image_1.delete(save=False)
-        if self.exercise.image_2:
-            self.exercise.image_2.delete(save=False)
-
-    # -----------------------------------------------------------------
-    # SINGLE IMAGE UPLOAD
-    # -----------------------------------------------------------------
-
-    def test_upload_image_1(self):
-        """Ensure image_1 can be uploaded."""
-        url = exercise_image_upload_url(self.exercise.id)
-
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
-            img = Image.new("RGB", (10, 10))
-            img.save(image_file, format="JPEG")
-            image_file.seek(0)
-
-            payload = {"image_1": image_file}
-            res = self.client.post(url, payload, format="multipart")
-
-        self.exercise.refresh_from_db()
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn("image_1", res.data)
-        self.assertTrue(self.exercise.image_1)
-
-    def test_upload_image_2(self):
-        """Ensure image_2 can be uploaded."""
-        url = exercise_image_upload_url(self.exercise.id)
-
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
-            img = Image.new("RGB", (10, 10))
-            img.save(image_file, format="JPEG")
-            image_file.seek(0)
-
-            payload = {"image_2": image_file}
-            res = self.client.post(url, payload, format="multipart")
-
-        self.exercise.refresh_from_db()
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertIn("image_2", res.data)
-        self.assertTrue(self.exercise.image_2)
-
-    # -----------------------------------------------------------------
-    # BOTH IMAGES UPLOAD
-    # -----------------------------------------------------------------
-
-    def test_upload_both_images(self):
-        """Ensure both images can be uploaded in one request."""
-        url = exercise_image_upload_url(self.exercise.id)
-
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as img1, tempfile.NamedTemporaryFile(suffix=".jpg") as img2:
-            image1 = Image.new("RGB", (10, 10))
-            image1.save(img1, format="JPEG")
-            img1.seek(0)
-
-            image2 = Image.new("RGB", (10, 10))
-            image2.save(img2, format="JPEG")
-            img2.seek(0)
-
-            payload = {
-                "image_1": img1,
-                "image_2": img2,
-            }
-            res = self.client.post(url, payload, format="multipart")
-
-        self.exercise.refresh_from_db()
-
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.exercise.image_1)
-        self.assertTrue(self.exercise.image_2)
-
-    def test_user_cannot_upload_image_to_other_users_exercise(self):
-        """Ensure a user cannot upload an image to another user's exercise."""
+    def test_tags_limited_to_user_and_system_only(self):
+        """Ensure only system tags and the authenticated user's custom tags are returned."""
         other_user = create_user(email="other@example.com")
-        other_exercise = create_exercise(user=other_user)
 
-        url = exercise_image_upload_url(other_exercise.id)
+        own_tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Glutes",
+            type=ExerciseTag.PRIMARY_MUSCLE,
+        )
+        other_tag = ExerciseTag.objects.create(
+            user=other_user,
+            name="Calves",
+            type=ExerciseTag.SECONDARY_MUSCLE,
+        )
+        system_tag = ExerciseTag.objects.create(
+            name="Bodyweight",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+            is_system=True,
+        )
 
-        with tempfile.NamedTemporaryFile(suffix=".jpg") as image_file:
-            img = Image.new("RGB", (10, 10))
-            img.save(image_file, format="JPEG")
-            image_file.seek(0)
+        res = self.client.get(EXERCISE_TAGS_LIST_URL)
 
-            payload = {"image_1": image_file}
-            res = self.client.post(url, payload, format="multipart")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        returned_ids = [item["id"] for item in res.data]
+
+        self.assertIn(own_tag.id, returned_ids)
+        self.assertIn(system_tag.id, returned_ids)
+        self.assertNotIn(other_tag.id, returned_ids)
+
+    def test_user_cannot_update_system_exercise_tag(self):
+        """Ensure a user cannot update a system exercise tag."""
+        tag = ExerciseTag.objects.create(
+            name="Strength",
+            type=ExerciseTag.TYPE_CATEGORY,
+            is_system=True,
+        )
+
+        payload = {"name": "Powerlifting"}
+        url = exercise_tag_detail_url(tag.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        tag.refresh_from_db()
+        self.assertEqual(tag.name, "Strength")
+
+    def test_user_cannot_delete_system_exercise_tag(self):
+        """Ensure a user cannot delete a system exercise tag."""
+        tag = ExerciseTag.objects.create(
+            name="Dumbbell",
+            type=ExerciseTag.TYPE_EQUIPMENT,
+            is_system=True,
+        )
+
+        url = exercise_tag_detail_url(tag.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(ExerciseTag.objects.filter(id=tag.id).exists())
+
+    def test_user_cannot_retrieve_other_users_custom_tag(self):
+        """Ensure a user cannot retrieve another user's custom exercise tag."""
+        other_user = create_user(email="other@example.com")
+        tag = ExerciseTag.objects.create(
+            user=other_user,
+            name="Calves",
+            type=ExerciseTag.SECONDARY_MUSCLE,
+        )
+
+        url = exercise_tag_detail_url(tag.id)
+        res = self.client.get(url)
 
         self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_user_cannot_update_other_users_custom_tag(self):
+        """Ensure a user cannot update another user's custom exercise tag."""
+        other_user = create_user(email="other@example.com")
+        tag = ExerciseTag.objects.create(
+            user=other_user,
+            name="Calves",
+            type=ExerciseTag.SECONDARY_MUSCLE,
+        )
+        payload = {"name": "Glutes"}
+        url = exercise_tag_detail_url(tag.id)
+        res = self.client.patch(url, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+
+        tag.refresh_from_db()
+        self.assertEqual(tag.name, "Calves")
+
+    def test_user_cannot_delete_other_users_custom_tag(self):
+        """Ensure a user cannot delete another user's custom exercise tag."""
+        other_user = create_user(email="other@example.com")
+        tag = ExerciseTag.objects.create(
+            user=other_user,
+            name="Calves",
+            type=ExerciseTag.SECONDARY_MUSCLE,
+        )
+
+        url = exercise_tag_detail_url(tag.id)
+        res = self.client.delete(url)
+
+        self.assertEqual(res.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(ExerciseTag.objects.filter(id=tag.id).exists())
+
     # -----------------------------------------------------------------
-    # INVALID INPUT
+    # EXERCISE TAG RELATIONSHIP TESTS
     # -----------------------------------------------------------------
 
-    def test_upload_image_bad_request(self):
-        """Verify invalid image upload returns 400."""
-        url = exercise_image_upload_url(self.exercise.id)
+    def test_create_exercise_with_new_tags(self):
+        """Ensure new exercise tags are created and linked when provided during exercise creation."""
+        payload = {
+            "name": "Bench Press",
+            "difficulty": "beginner",
+            "ex_tags": [
+                {"name": "Chest", "type": ExerciseTag.PRIMARY_MUSCLE},
+                {"name": "Strength", "type": ExerciseTag.TYPE_CATEGORY},
+            ],
+        }
 
-        payload = {"image_1": "notanimage"}
-        res = self.client.post(url, payload, format="multipart")
+        res = self.client.post(EXERCISES_LIST_URL, payload, format="json")
 
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        exercises = Exercise.objects.filter(user=self.user)
+        self.assertEqual(exercises.count(), 1)
+
+        exercise = exercises[0]
+        self.assertEqual(exercise.ex_tags.count(), 2)
+
+        for tag in payload["ex_tags"]:
+            exists = exercise.ex_tags.filter(
+                name=tag["name"],
+                type=tag["type"],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)
+
+    def test_create_exercise_with_existing_tags(self):
+        """Verify that existing exercise tags are reused when creating an exercise."""
+        existing_tag = ExerciseTag.objects.create(
+            user=self.user,
+            name="Chest",
+            type=ExerciseTag.PRIMARY_MUSCLE,
+        )
+
+        payload = {
+            "name": "Incline Bench Press",
+            "difficulty": "intermediate",
+            "ex_tags": [
+                {"name": "Chest", "type": ExerciseTag.PRIMARY_MUSCLE},
+                {"name": "Strength", "type": ExerciseTag.TYPE_CATEGORY},
+            ],
+        }
+
+        res = self.client.post(EXERCISES_LIST_URL, payload, format="json")
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+
+        exercises = Exercise.objects.filter(user=self.user)
+        self.assertEqual(exercises.count(), 1)
+
+        exercise = exercises[0]
+        self.assertEqual(exercise.ex_tags.count(), 2)
+        self.assertIn(existing_tag, exercise.ex_tags.all())
+
+        for tag in payload["ex_tags"]:
+            exists = exercise.ex_tags.filter(
+                name=tag["name"],
+                type=tag["type"],
+                user=self.user,
+            ).exists()
+            self.assertTrue(exists)

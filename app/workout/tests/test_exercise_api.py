@@ -97,16 +97,14 @@ class PrivateExercisesApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
 
-    def test_create_exercise_always_private(self):
-        """Ensure a normal user creates exercises as private, even if is_public is sent."""
+    def test_user_can_not_create_a_public_exercise(self):
+        """Ensure a normal user cannot create a public exercise."""
         payload = {"name": "Bench Press", "is_public": True}
         res = self.client.post(EXERCISES_LIST_URL, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-
-        exercise = Exercise.objects.get(id=res.data["id"])
-        self.assertEqual(exercise.user, self.user)
-        self.assertFalse(exercise.is_public)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Exercise.objects.count(), 0)
+        self.assertIn("error_is_public", res.data)
 
     def test_retrieve_exercises_includes_user_private_and_public(self):
         """Ensure the exercise list includes the user's private exercises and public exercises."""
@@ -165,7 +163,7 @@ class PrivateExercisesApiTests(TestCase):
         url = exercise_detail_url(exercise.id)
         res = self.client.patch(url, payload)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
         exercise.refresh_from_db()
         self.assertFalse(exercise.is_public)
 

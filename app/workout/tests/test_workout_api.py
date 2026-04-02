@@ -1,11 +1,10 @@
-from PIL import Image
 from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from core.models import Workout, WorkoutTag
 from workout.serializers import WorkoutSerializer, WorkoutDetailSerializer
-from workout.tests.urls import WORKOUTS_LIST_URL, workout_detail_url, exercise_image_upload_url
+from workout.tests.urls import WORKOUTS_LIST_URL, workout_detail_url
 from workout.tests.helpers import create_user, create_workout, create_exercise, create_workout_exercise
 
 # ---------------------------------------------------------------------

@@ -59,7 +59,9 @@ class ExerciseSerializer(serializers.ModelSerializer):
         # Check if user is trying to set a public exercise
         if attrs.get("is_public") is True:
             if not user or not user.is_staff:
-                raise serializers.ValidationError({"is_public": "You cannot create or update a public exercise. is_public must be False!"})
+                raise serializers.ValidationError(
+                    {"error_is_public": "You cannot create or update a public exercise. is_public must be False!"}
+                )
 
         return attrs
 

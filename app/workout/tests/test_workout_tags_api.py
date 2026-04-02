@@ -6,6 +6,7 @@ from core.models import Workout, WorkoutTag
 from workout.serializers import WorkoutTagSerializer
 from workout.tests.urls import WORKOUT_TAGS_LIST_URL, WORKOUTS_LIST_URL, workout_tag_detail_url
 from workout.tests.helpers import create_user
+
 # ---------------------------------------------------------------------
 # PUBLIC API TESTS
 # ---------------------------------------------------------------------
@@ -191,8 +192,8 @@ class PrivateTagsApiTests(TestCase):
         own_tag = WorkoutTag.objects.create(user=self.user, name="Own Assigned Tag")
         other_tag = WorkoutTag.objects.create(user=other_user, name="Other Assigned Tag")
 
-        own_workout = Workout.objects.create(title="Own Workout",duration_minutes=45,user=self.user)
-        other_workout = Workout.objects.create(title="Other Workout",duration_minutes=30,user=other_user)
+        own_workout = Workout.objects.create(title="Own Workout", duration_minutes=45, user=self.user)
+        other_workout = Workout.objects.create(title="Other Workout", duration_minutes=30, user=other_user)
 
         own_workout.wo_tags.add(own_tag)
         other_workout.wo_tags.add(other_tag)

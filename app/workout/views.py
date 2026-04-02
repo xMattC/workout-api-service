@@ -39,7 +39,7 @@ WORKOUT_VIEWSET_SCHEMA = extend_schema_view(
                 name="wo_tags",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.",
+                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.", #
             ),
         ],
     ),
