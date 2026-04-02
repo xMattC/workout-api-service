@@ -94,11 +94,20 @@ class ModelTests(TestCase):
 
         self.assertEqual(str(workout_exercise), expected_str)
 
-    def test_create_tag(self):
+    def test_create_exercise_tag(self):
         """Verify that a tag is created successfully and string representation returns its name."""
         user = create_user()
 
-        tag = models.Tag.objects.create(user=user, name="Tag1")
+        tag = models.ExerciseTag.objects.create(user=user, name="Tag_name", type="tag_type")
+
+        self.assertEqual(str(tag), tag.name)
+        self.assertEqual("tag_type", tag.type)
+
+    def test_create_workout_tag(self):
+        """Verify that a tag is created successfully and string representation returns its name."""
+        user = create_user()
+
+        tag = models.WorkoutTag.objects.create(user=user, name="Tag1")
 
         self.assertEqual(str(tag), tag.name)
 

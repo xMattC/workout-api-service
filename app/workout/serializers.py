@@ -46,6 +46,23 @@ class ExerciseSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "image_1", "image_2", "is_public", "difficulty", "ex_tags"]
         read_only_fields = ["id"]
 
+    def validate(self, attrs):
+        """Validate exercise creation/update rules.
+
+        Rules:
+        - Non-staff users cannot set is_public=True
+        """
+
+        request = self.context.get("request")
+        user = request.user if request else None
+
+        # Check if user is trying to set a public exercise
+        if attrs.get("is_public") is True:
+            if not user or not user.is_staff:
+                raise serializers.ValidationError({"is_public": "You cannot create or update a public exercise. is_public must be False!"})
+
+        return attrs
+
     # -----------------------------------------------------------------
     # TAG HELPERS
     # -----------------------------------------------------------------

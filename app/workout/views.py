@@ -11,6 +11,10 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
+from django.db.models import Q
+
+# from rest_framework import permissions
 
 from core.models import Exercise, WorkoutTag, ExerciseTag, Workout
 from workout import serializers
@@ -21,15 +25,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------
 # SWAGGER / OPENAPI DECORATORS
 # ---------------------------------------------------------------------
-
-from drf_spectacular.utils import (
-    OpenApiParameter,
-    OpenApiTypes,
-    extend_schema,
-    extend_schema_view,
-)
-
-
 WORKOUT_VIEWSET_SCHEMA = extend_schema_view(
     list=extend_schema(
         description="List workouts owned by the authenticated user.",
@@ -37,25 +32,22 @@ WORKOUT_VIEWSET_SCHEMA = extend_schema_view(
             OpenApiParameter(
                 name="exercises",
                 type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
                 description="Comma separated list of exercise IDs to filter by.",
+            ),
+            OpenApiParameter(
+                name="wo_tags",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.",
             ),
         ],
     ),
-    retrieve=extend_schema(
-        description="Retrieve a detailed workout owned by the authenticated user."
-    ),
-    create=extend_schema(
-        description="Create a workout for the authenticated user."
-    ),
-    update=extend_schema(
-        description="Fully update a workout owned by the authenticated user."
-    ),
-    partial_update=extend_schema(
-        description="Partially update a workout owned by the authenticated user."
-    ),
-    destroy=extend_schema(
-        description="Delete a workout owned by the authenticated user."
-    ),
+    retrieve=extend_schema(description="Retrieve a detailed workout owned by the authenticated user."),
+    create=extend_schema(description="Create a workout for the authenticated user."),
+    update=extend_schema(description="Fully update a workout owned by the authenticated user."),
+    partial_update=extend_schema(description="Partially update a workout owned by the authenticated user."),
+    destroy=extend_schema(description="Delete a workout owned by the authenticated user."),
 )
 
 WORKOUT_TAG_VIEWSET_SCHEMA = extend_schema_view(
@@ -70,50 +62,11 @@ WORKOUT_TAG_VIEWSET_SCHEMA = extend_schema_view(
             ),
         ],
     ),
-    retrieve=extend_schema(
-        description="Retrieve a workout tag owned by the authenticated user."
-    ),
-    create=extend_schema(
-        description="Create a workout tag for the authenticated user."
-    ),
-    update=extend_schema(
-        description="Fully update a workout tag owned by the authenticated user."
-    ),
-    partial_update=extend_schema(
-        description="Partially update a workout tag owned by the authenticated user."
-    ),
-    destroy=extend_schema(
-        description="Delete a workout tag owned by the authenticated user."
-    ),
-)
-
-EXERCISE_TAG_VIEWSET_SCHEMA = extend_schema_view(
-    list=extend_schema(
-        description="List system exercise tags and the authenticated user's custom exercise tags.",
-        parameters=[
-            OpenApiParameter(
-                name="assigned_only",
-                type=OpenApiTypes.INT,
-                enum=[0, 1],
-                description="Set to 1 to return only tags assigned to at least one exercise.",
-            ),
-        ],
-    ),
-    retrieve=extend_schema(
-        description="Retrieve a tag if it is system-defined or owned by the authenticated user."
-    ),
-    create=extend_schema(
-        description="Create a custom exercise tag for the authenticated user."
-    ),
-    update=extend_schema(
-        description="Fully update a tag only if it is a user-owned custom exercise tag."
-    ),
-    partial_update=extend_schema(
-        description="Partially update a tag only if it is a user-owned custom exercise tag."
-    ),
-    destroy=extend_schema(
-        description="Delete a tag only if it is a user-owned custom exercise tag."
-    ),
+    retrieve=extend_schema(description="Retrieve a workout tag owned by the authenticated user."),
+    create=extend_schema(description="Create a workout tag for the authenticated user."),
+    update=extend_schema(description="Fully update a workout tag owned by the authenticated user."),
+    partial_update=extend_schema(description="Partially update a workout tag owned by the authenticated user."),
+    destroy=extend_schema(description="Delete a workout tag owned by the authenticated user."),
 )
 
 EXERCISE_VIEWSET_SCHEMA = extend_schema_view(
@@ -133,21 +86,11 @@ EXERCISE_VIEWSET_SCHEMA = extend_schema_view(
             ),
         ],
     ),
-    retrieve=extend_schema(
-        description="Retrieve an exercise if it is public or owned by the authenticated user."
-    ),
-    create=extend_schema(
-        description="Create an exercise for the authenticated user."
-    ),
-    update=extend_schema(
-        description="Fully update an exercise owned by the authenticated user."
-    ),
-    partial_update=extend_schema(
-        description="Partially update an exercise owned by the authenticated user."
-    ),
-    destroy=extend_schema(
-        description="Delete an exercise owned by the authenticated user."
-    ),
+    retrieve=extend_schema(description="Retrieve an exercise if it is public or owned by the authenticated user."),
+    create=extend_schema(description="Create an exercise for the authenticated user."),
+    update=extend_schema(description="Fully update an exercise owned by the authenticated user."),
+    partial_update=extend_schema(description="Partially update an exercise owned by the authenticated user."),
+    destroy=extend_schema(description="Delete an exercise owned by the authenticated user."),
 )
 
 EXERCISE_UPLOAD_IMAGE_SCHEMA = extend_schema(
@@ -156,11 +99,29 @@ EXERCISE_UPLOAD_IMAGE_SCHEMA = extend_schema(
     responses=serializers.ExerciseImageSerializer,
 )
 
+EXERCISE_TAG_VIEWSET_SCHEMA = extend_schema_view(
+    list=extend_schema(
+        description="List system exercise tags and the authenticated user's custom exercise tags.",
+        parameters=[
+            OpenApiParameter(
+                name="assigned_only",
+                type=OpenApiTypes.INT,
+                enum=[0, 1],
+                description="Set to 1 to return only tags assigned to at least one exercise.",
+            ),
+        ],
+    ),
+    retrieve=extend_schema(description="Retrieve a tag if it is system-defined or owned by the authenticated user."),
+    create=extend_schema(description="Create a custom exercise tag for the authenticated user."),
+    update=extend_schema(description="Fully update a tag only if it is a user-owned custom exercise tag."),
+    partial_update=extend_schema(description="Partially update a tag only if it is a user-owned custom exercise tag."),
+    destroy=extend_schema(description="Delete a tag only if it is a user-owned custom exercise tag."),
+)
+
+
 # ---------------------------------------------------------------------
 # SHARED BASE VIEWSETS / HELPERS
 # ---------------------------------------------------------------------
-
-
 class BaseAttrViewSet(
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
@@ -204,26 +165,17 @@ class BaseAttrViewSet(
 # ---------------------------------------------------------------------
 # API VIEWSETS
 # ---------------------------------------------------------------------
-
-
 @WORKOUT_VIEWSET_SCHEMA
 class WorkoutViewSet(viewsets.ModelViewSet):
     """Manage workout API endpoints."""
 
     # -----------------------------------------------------------------
-    # ACTION BEHAVIOUR (inherited from DRF ModelViewSet)
-    # -----------------------------------------------------------------
-    # - list [GET]              -> return a lightweight list representation of workouts
-    # - retrieve [GET]          -> return a detailed representation of a single workout
-    # - create [POST]           -> create a workout for the authenticated user
-    # - update [PUT]            -> fully replace editable fields on an existing workout
-    # - partial_update [PATCH]  -> partially update an existing workout
-    # - destroy [DELETE]        -> delete an existing workout
-    # -----------------------------------------------------------------
     # EXAMPLE ENDPOINTS
     # -----------------------------------------------------------------
     # GET    /api/workouts/
     # GET    /api/workouts/?exercises=1,2,3
+    # GET    /api/workouts/?wo_tags=1,2
+    # GET    /api/workouts/?exercises=1,2&wo_tags=3,4
     # GET    /api/workouts/{id}/
     #
     # POST   /api/workouts/
@@ -246,15 +198,25 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         """Return workouts for the authenticated user, with optional filtering.
 
         Supported filters:
-        - exercises: comma separated list of exercise IDs
+        - exercises: comma-separated list of exercise IDs
+        - wo_tags: comma-separated list of workout tag IDs
         """
-        exercises = self.request.query_params.get("exercises")
+        # Base queryset: workouts owned by the authenticated user
         queryset = self.queryset.filter(user=self.request.user)
 
+        # Optional filter: exercises (?exercises=1,2,3)
+        exercises = self.request.query_params.get("exercises")
         if exercises:
             exercise_ids = self._parse_ids_param(exercises)
             if exercise_ids:
                 queryset = queryset.filter(workout_exercises__exercise__id__in=exercise_ids)
+
+        # Optional filter: wo_tags (?wo_tags=1,2)
+        wo_tags = self.request.query_params.get("wo_tags")
+        if wo_tags:
+            tag_ids = self._parse_ids_param(wo_tags)
+            if tag_ids:
+                queryset = queryset.filter(wo_tags__id__in=tag_ids)
 
         return queryset.order_by("-id").distinct()
 
@@ -276,28 +238,52 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         logger.info("Workout create requested by user_id=%s", self.request.user.id)
 
 
+@WORKOUT_TAG_VIEWSET_SCHEMA
+class WorkoutTagViewSet(BaseAttrViewSet):
+    """Manage tag API endpoints for the authenticated user."""
+
+    # -----------------------------------------------------------------
+    # EXAMPLE ENDPOINTS
+    # -----------------------------------------------------------------
+    # GET    /api/workout-tags/
+    # GET    /api/workout-tags/?assigned_only=1
+    # GET    /api/workout-tags/{id}/
+    #
+    # POST   /api/workout-tags/
+    # PATCH  /api/workout-tags/{id}/
+    # DELETE /api/workout-tags/{id}/
+    # -----------------------------------------------------------------
+
+    serializer_class = serializers.WorkoutTagSerializer
+    queryset = WorkoutTag.objects.all()
+
+    def get_queryset(self):
+        """Return workout tags for the authenticated user, with optional filtering.
+
+        Supported filters:
+        - assigned_only=1 -> only tags linked to at least one workout
+        """
+        queryset = super().get_queryset()
+
+        assigned_only = self.request.query_params.get("assigned_only") == "1"
+        if assigned_only:
+            queryset = queryset.filter(workouts__isnull=False)
+
+        return queryset.distinct()
+
+
 @EXERCISE_VIEWSET_SCHEMA
 class ExerciseViewSet(BaseAttrViewSet):
     """Manage exercise API endpoints for the authenticated user."""
 
     # -----------------------------------------------------------------
-    # ACTION BEHAVIOUR (inherited from DRF mixins via BaseAttrViewSet)
-    # -----------------------------------------------------------------
-    # - list [GET]              -> return exercise objects
-    # - retrieve [GET]          -> return a single exercise
-    # - create [POST]           -> create an exercise owned by the authenticated user
-    # - update [PUT]            -> fully update an existing exercise
-    # - partial_update [PATCH]  -> partially update an existing exercise
-    # - destroy [DELETE]        -> delete an existing exercise
-    #
-    # - upload_image [POST]     -> custom action to upload/replace exercise image
-    # -----------------------------------------------------------------
     # EXAMPLE ENDPOINTS
     # -----------------------------------------------------------------
     # GET    /api/exercises/
+    # GET    /api/exercises/{id}/
     # GET    /api/exercises/?assigned_only=1
     # GET    /api/exercises/?tags=1,2
-    # GET    /api/exercises/{id}/
+    # GET    /api/exercises/?tags=1,2&assigned_only=1
     #
     # POST   /api/exercises/
     # PATCH  /api/exercises/{id}/
@@ -314,35 +300,24 @@ class ExerciseViewSet(BaseAttrViewSet):
         return [int(str_id) for str_id in qs.split(",") if str_id.strip().isdigit()]
 
     def get_queryset(self):
-        """Return exercises visible to the authenticated user, with optional filtering.
+        """Return exercises visible to the authenticated user, with optional filtering."""
 
-        Visibility rules:
-        - Include the user's own exercises
-        - Include public exercises created by any user
-        - Exclude private exercises owned by other users
+        # Get public exercises and the authenticated user's private exercises.
+        queryset = self.queryset.filter(Q(user=self.request.user) | Q(is_public=True))
 
-        Supported filters:
-        - assigned_only=1 -> only exercises linked to at least one workout
-        - tags=<id,id>    -> only exercises linked to the given tag IDs
-        """
-        user = self.request.user
-        tags = self.request.query_params.get("tags")
-
-        own_exercises = self.queryset.filter(user=user)
-        public_exercises = self.queryset.filter(is_public=True)
-
-        queryset = (own_exercises | public_exercises).order_by("-name").distinct()
-
-        assigned_to_workouts_only = self.request.query_params.get("assigned_only") == "1"
-        if assigned_to_workouts_only:
+        # Optional filter: apply 'assigned_only' query param. ?assigned_only=1
+        assigned_only = self.request.query_params.get("assigned_only") == "1"
+        if assigned_only:
             queryset = queryset.filter(workout_exercises__isnull=False)
 
-        if tags:
-            tag_ids = self._parse_ids_param(tags)
+        # Optional filter: apply 'ex_tags' query param. ?ex_tags=1,2
+        ex_tags = self.request.query_params.get("ex_tags")
+        if ex_tags:
+            tag_ids = self._parse_ids_param(ex_tags)
             if tag_ids:
-                queryset = queryset.filter(tags__id__in=tag_ids)
+                queryset = queryset.filter(ex_tags__id__in=tag_ids)
 
-        return queryset.distinct()
+        return queryset.order_by("-name").distinct()
 
     def get_serializer_class(self):
         """Return the serializer class for the current action.
@@ -402,83 +377,10 @@ class ExerciseViewSet(BaseAttrViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@WORKOUT_TAG_VIEWSET_SCHEMA
-class WorkoutTagViewSet(BaseAttrViewSet):
-    """Manage tag API endpoints for the authenticated user."""
-
-    # -----------------------------------------------------------------
-    # ACTION BEHAVIOUR (inherited from DRF mixins via BaseAttrViewSet)
-    # -----------------------------------------------------------------
-    # - list [GET]              -> return tag objects
-    # - retrieve [GET]          -> return a single tag
-    # - create [POST]           -> create a tag owned by the authenticated user
-    # - update [PUT]            -> fully update an existing tag
-    # - partial_update [PATCH]  -> partially update an existing tag
-    # - destroy [DELETE]        -> delete an existing tag
-    # -----------------------------------------------------------------
-    # EXAMPLE ENDPOINTS
-    # -----------------------------------------------------------------
-    # GET    /api/workout-tags/
-    # GET    /api/workout-tags/?assigned_only=1
-    # GET    /api/workout-tags/{id}/
-    #
-    # POST   /api/workout-tags/
-    # PATCH  /api/workout-tags/{id}/
-    # DELETE /api/workout-tags/{id}/
-    # -----------------------------------------------------------------
-
-    serializer_class = serializers.WorkoutTagSerializer
-    queryset = WorkoutTag.objects.all()
-
-    def get_queryset(self):
-        """Return workout tags for the authenticated user, with optional filtering.
-
-        Supported filters:
-        - assigned_only=1 -> only tags linked to at least one workout
-        """
-        queryset = super().get_queryset()
-
-        assigned_only = self.request.query_params.get("assigned_only") == "1"
-        if assigned_only:
-            queryset = queryset.filter(workouts__isnull=False)
-
-        return queryset.distinct()
-
-
-from django.db.models import Q
-from rest_framework import permissions
-from rest_framework.exceptions import PermissionDenied
-
-
 @EXERCISE_TAG_VIEWSET_SCHEMA
 class ExerciseTagViewSet(BaseAttrViewSet):
     """Manage exercise tag API endpoints."""
 
-    # -----------------------------------------------------------------
-    # ACTION BEHAVIOUR (customised from DRF mixins via BaseAttrViewSet)
-    # -----------------------------------------------------------------
-    # - list [GET]
-    #     -> return all system exercise tags and the authenticated user's custom tags
-    #     -> optional filter: assigned_only=1 (only tags linked to at least one exercise)
-    #
-    # - retrieve [GET]
-    #     -> return a single tag if it is either system-defined or owned by the user
-    #
-    # - create [POST]
-    #     -> create a new custom exercise tag owned by the authenticated user
-    #     -> system tags cannot be created via the API
-    #
-    # - update [PUT]
-    #     -> fully update a tag only if it is a user-owned custom tag
-    #     -> system tags and other users' tags cannot be modified
-    #
-    # - partial_update [PATCH]
-    #     -> partially update a tag only if it is a user-owned custom tag
-    #     -> system tags and other users' tags cannot be modified
-    #
-    # - destroy [DELETE]
-    #     -> delete a tag only if it is a user-owned custom tag
-    #     -> system tags and other users' tags cannot be deleted
     # -----------------------------------------------------------------
     # EXAMPLE ENDPOINTS
     # -----------------------------------------------------------------
@@ -504,7 +406,7 @@ class ExerciseTagViewSet(BaseAttrViewSet):
 
         assigned_only = self.request.query_params.get("assigned_only") == "1"
         if assigned_only:
-            queryset = queryset.filter(exercise__isnull=False)
+            queryset = queryset.filter(exercises__isnull=False)
 
         return queryset.distinct()
 
