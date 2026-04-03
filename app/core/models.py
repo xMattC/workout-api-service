@@ -176,4 +176,4 @@ class ExerciseTag(models.Model):
         unique_together = ("user", "name", "type")
 
     def __str__(self):
-        return f"{self.name} ({self.type})"
+        return f"{self.name} ({self.get_type_display()})"

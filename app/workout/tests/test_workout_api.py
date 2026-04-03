@@ -50,7 +50,7 @@ class PrivateWorkoutApiTests(TestCase):
         serializer = WorkoutSerializer(workouts, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        self.assertEqual(res.data["results"], serializer.data)
 
     def test_workout_list_limited_to_user(self):
         """Ensure the workout list endpoint returns only workouts belonging to the authenticated user."""
@@ -63,8 +63,8 @@ class PrivateWorkoutApiTests(TestCase):
         serializer = WorkoutSerializer(workout)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0], serializer.data)
+        self.assertEqual(len(res.data["results"]), 1)
+        self.assertEqual(res.data["results"][0], serializer.data)
 
     def test_get_workout_detail(self):
         """Verify that a user can retrieve detailed information for a specific workout."""
@@ -355,9 +355,9 @@ class PrivateWorkoutApiTests(TestCase):
         s1 = WorkoutSerializer(wo1)
         s2 = WorkoutSerializer(wo2)
         s3 = WorkoutSerializer(wo3)
-        self.assertIn(s1.data, res.data)
-        self.assertIn(s2.data, res.data)
-        self.assertNotIn(s3.data, res.data)
+        self.assertIn(s1.data, res.data["results"])
+        self.assertIn(s2.data, res.data["results"])
+        self.assertNotIn(s3.data, res.data["results"])
 
     def test_filter_by_exercise(self):
         """Test filters by ensuring that only workouts that include any of the specified exercise IDs are returned."""
@@ -377,6 +377,6 @@ class PrivateWorkoutApiTests(TestCase):
         s1 = WorkoutSerializer(wo1)
         s2 = WorkoutSerializer(wo2)
         s3 = WorkoutSerializer(wo3)
-        self.assertIn(s1.data, res.data)
-        self.assertIn(s2.data, res.data)
-        self.assertNotIn(s3.data, res.data)
+        self.assertIn(s1.data, res.data["results"])
+        self.assertIn(s2.data, res.data["results"])
+        self.assertNotIn(s3.data, res.data["results"])

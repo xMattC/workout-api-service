@@ -53,7 +53,7 @@ class PrivateTagsApiTests(TestCase):
         serializer = WorkoutTagSerializer(tags, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        self.assertEqual(res.data["results"], serializer.data)
 
     def test_tags_limited_to_user(self):
         """Ensure the tag list endpoint returns only tags belonging to the authenticated user."""
@@ -64,9 +64,9 @@ class PrivateTagsApiTests(TestCase):
         res = self.client.get(WORKOUT_TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]["name"], tag.name)
-        self.assertEqual(res.data[0]["id"], tag.id)
+        self.assertEqual(len(res.data["results"]), 1)
+        self.assertEqual(res.data["results"][0]["name"], tag.name)
+        self.assertEqual(res.data["results"][0]["id"], tag.id)
 
     def test_update_workout_tag(self):
         """Verify that an authenticated user can update the name of their tag."""
@@ -106,8 +106,8 @@ class PrivateTagsApiTests(TestCase):
 
         s1 = WorkoutTagSerializer(tag1)
         s2 = WorkoutTagSerializer(tag2)
-        self.assertIn(s1.data, res.data)
-        self.assertNotIn(s2.data, res.data)
+        self.assertIn(s1.data, res.data["results"])
+        self.assertNotIn(s2.data, res.data["results"])
 
     def test_filtered_tags_unique(self):
         """Test filtered tags returns a unique list."""
@@ -128,7 +128,7 @@ class PrivateTagsApiTests(TestCase):
 
         res = self.client.get(WORKOUT_TAGS_LIST_URL, {"assigned_only": 1})
 
-        self.assertEqual(len(res.data), 1)
+        self.assertEqual(len(res.data["results"]), 1)
 
     # -----------------------------------------------------------------
     # WORKOUT TAG RELATIONSHIP TESTS
@@ -201,6 +201,6 @@ class PrivateTagsApiTests(TestCase):
         res = self.client.get(WORKOUT_TAGS_LIST_URL, {"assigned_only": 1})
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]["id"], own_tag.id)
-        self.assertEqual(res.data[0]["name"], own_tag.name)
+        self.assertEqual(len(res.data["results"]), 1)
+        self.assertEqual(res.data["results"][0]["id"], own_tag.id)
+        self.assertEqual(res.data["results"][0]["name"], own_tag.name)
