@@ -71,7 +71,6 @@ class PrivateExercisesApiTests(TestCase):
             "name": "Custom Move",
             "is_public": False,
         }
-
         res = self.client.post(EXERCISES_LIST_URL, payload)
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
@@ -95,7 +94,7 @@ class PrivateExercisesApiTests(TestCase):
         serializer = ExerciseSerializer(exercises, many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data, serializer.data)
+        self.assertEqual(res.data["results"], serializer.data)
 
     def test_user_can_not_create_a_public_exercise(self):
         """Ensure a normal user cannot create a public exercise."""
@@ -119,7 +118,7 @@ class PrivateExercisesApiTests(TestCase):
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-        returned_ids = [item["id"] for item in res.data]
+        returned_ids = [item["id"] for item in res.data["results"]]
         self.assertIn(private_own.id, returned_ids)
         self.assertIn(public_admin.id, returned_ids)
         self.assertNotIn(private_other.id, returned_ids)
@@ -136,9 +135,9 @@ class PrivateExercisesApiTests(TestCase):
         res = self.client.get(EXERCISES_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 2)
+        self.assertEqual(len(res.data["results"]), 2)
 
-        returned_ids = [item["id"] for item in res.data]
+        returned_ids = [item["id"] for item in res.data["results"]]
         self.assertIn(private_own.id, returned_ids)
         self.assertIn(public_exercise.id, returned_ids)
         self.assertNotIn(private_other.id, returned_ids)
@@ -191,8 +190,8 @@ class PrivateExercisesApiTests(TestCase):
         s1 = ExerciseSerializer(ex1)
         s2 = ExerciseSerializer(ex2)
 
-        self.assertIn(s1.data, res.data)
-        self.assertNotIn(s2.data, res.data)
+        self.assertIn(s1.data, res.data["results"])
+        self.assertNotIn(s2.data, res.data["results"])
 
     def test_assigned_only_returns_unique_exercise(self):
         """Assigned filter returns each exercise once even if linked to multiple workouts."""
@@ -205,9 +204,9 @@ class PrivateExercisesApiTests(TestCase):
         res = self.client.get(EXERCISES_LIST_URL, {"assigned_only": 1})
 
         self.assertEqual(res.status_code, 200)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data[0]["id"], exercise.id)
-        self.assertEqual(res.data[0]["name"], exercise.name)
+        self.assertEqual(len(res.data["results"]), 1)
+        self.assertEqual(res.data["results"][0]["id"], exercise.id)
+        self.assertEqual(res.data["results"][0]["name"], exercise.name)
 
 
 class ImageUploadTests(TestCase):

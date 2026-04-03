@@ -39,7 +39,7 @@ WORKOUT_VIEWSET_SCHEMA = extend_schema_view(
                 name="wo_tags",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.", # noqa
+                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.",  # noqa
             ),
         ],
     ),
@@ -394,7 +394,7 @@ class ExerciseTagViewSet(BaseAttrViewSet):
     # -----------------------------------------------------------------
 
     serializer_class = serializers.ExerciseTagSerializer
-    queryset = ExerciseTag.objects.all()
+    queryset = ExerciseTag.objects.all().order_by("name", "id")
 
     def get_queryset(self):
         """Return system exercise tags and the authenticated user's custom exercise tags.

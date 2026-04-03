@@ -59,7 +59,7 @@ class PrivateExerciseTagsApiTests(TestCase):
         res = self.client.get(EXERCISE_TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        returned_ids = [item["id"] for item in res.data]
+        returned_ids = [item["id"] for item in res.data["results"]]
         self.assertIn(tag1.id, returned_ids)
         self.assertIn(tag2.id, returned_ids)
 
@@ -135,8 +135,8 @@ class PrivateExerciseTagsApiTests(TestCase):
         s1 = ExerciseTagSerializer(tag1)
         s2 = ExerciseTagSerializer(tag2)
 
-        self.assertIn(s1.data, res.data)
-        self.assertNotIn(s2.data, res.data)
+        self.assertIn(s1.data, res.data["results"])
+        self.assertNotIn(s2.data, res.data["results"])
 
     def test_filtered_tags_unique(self):
         """Test filtered exercise tags returns a unique list."""
@@ -159,7 +159,7 @@ class PrivateExerciseTagsApiTests(TestCase):
 
         res = self.client.get(EXERCISE_TAGS_LIST_URL, {"assigned_only": 1})
 
-        self.assertEqual(len(res.data), 1)
+        self.assertEqual(len(res.data["results"]), 1)
 
     # -----------------------------------------------------------------
     # EXTRA TESTS
@@ -181,7 +181,7 @@ class PrivateExerciseTagsApiTests(TestCase):
         res = self.client.get(EXERCISE_TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        returned_ids = [item["id"] for item in res.data]
+        returned_ids = [item["id"] for item in res.data["results"]]
 
         self.assertIn(system_tag.id, returned_ids)
         self.assertIn(user_tag.id, returned_ids)
@@ -209,7 +209,7 @@ class PrivateExerciseTagsApiTests(TestCase):
         res = self.client.get(EXERCISE_TAGS_LIST_URL)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        returned_ids = [item["id"] for item in res.data]
+        returned_ids = [item["id"] for item in res.data["results"]]
 
         self.assertIn(own_tag.id, returned_ids)
         self.assertIn(system_tag.id, returned_ids)

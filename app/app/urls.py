@@ -33,7 +33,7 @@ urlpatterns = [
     ),
     path("api/user/", include("user.urls")),
     path("api/workout/", include("workout.urls")),
-]
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 
 if settings.DEBUG:
