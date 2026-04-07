@@ -20,6 +20,13 @@ The system enforces strict ownership rules and provides a clean, queryable API.
 The API is deployed and available for live interaction via Swagger documentation.
 ---
 
+## Development Workflow
+
+- Feature branch workflow (no direct commits to main)
+- Pull requests required for all changes
+- CI pipeline runs on PR (tests, linting)
+- Squash merges used to maintain clean history
+
 ## Core Features
 
 - Token-based authentication
