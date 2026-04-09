@@ -185,6 +185,17 @@ Development follows a structured workflow ensuring code quality and reliability:
 
 ---
 
+## Known Limitations
+
+- Authentication uses DRF token authentication for simplicity; JWT/OAuth flows are not implemented.
+- The project is designed as a portfolio backend service, not a production-hardened application.
+- CI currently covers basic automated checks and tests, but does not include more advanced release or deployment safeguards.
+- Rate limiting, audit logging, and observability tooling are not included.
+- Some derived workout fields are intentionally simplified in the current version.
+- The deployed demo environment is intended for exploration only and may be reset or changed without notice.
+
+---
+
 ## 📦 Running Locally
 
 ### 1. Clone Repository
