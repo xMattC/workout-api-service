@@ -17,75 +17,31 @@ The focus is on backend architecture, data modelling, and API design.
 ---
 ## 🚀 Live Demo & API Usage
 
-**Swagger Docs:**
+**Swagger Docs:**  
 http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
 
----
+Use the live Swagger UI to explore the API.
 
-### Demo Access
+### Authenticated demo flow
 
-Use the seeded demo account to explore authenticated endpoints with preloaded data:
+To access authenticated endpoints in Swagger:
 
-* **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
-* **Password:** DemoPassword123$
+#### 1. Create a user
+Open:
 
----
+`POST /api/user/create/`
 
-### Step-by-Step Demo Flow
-
-#### 1. Obtain Authentication Token
-
-In Swagger, open:
-
-`POST /api/user/token/`
-
-Click **"Try it out"**, then enter:
-
-```json
-{
-  "email": "api_demo@workoutapp.com",
-  "password": "DemoPassword123$"
-}
-```
-
-Click **Execute**, then copy the returned token.
-
----
-
-#### 2. Authorise Requests
-
-Click the **Authorize** button in Swagger and enter:
-
-```
-Token <your_token>
-```
-
----
-
-#### 3. Explore the API
-
-Try the following endpoints:
-
-* `GET /api/user/me/` → View your user profile
-* `GET /api/workout/` → View existing workouts
-* `POST /api/workout/` → Create a new workout
-* Add exercises to a workout
-
-This demonstrates authentication, permissions, and relational data handling.
-
-Example: `POST /api/user/create/`
-
-Request:
+Click **Try it out** and submit:
 
 ```json
 {
   "email": "test@example.com",
-  "password": "test123",
+  "password": "ExamplePass123!",
   "name": "Test User"
 }
 ```
 
-Response:
+Example response:
 
 ```json
 {
@@ -94,6 +50,39 @@ Response:
   "name": "Test User"
 }
 ```
+
+#### 2. Obtain an authentication token
+Open:
+
+`POST /api/user/token/`
+
+Click **Try it out** and submit:
+
+```json
+{
+  "email": "test@example.com",
+  "password": "ExamplePass123!"
+}
+```
+
+Copy the returned token.
+
+#### 3. Authorise requests
+Click the **Authorize** button in Swagger and enter:
+
+```text
+Token <your_token>
+```
+
+#### 4. Explore the API
+You can then try endpoints such as:
+
+- `GET /api/user/me/` — view your user profile
+- `GET /api/workout/` — view your workouts
+- `POST /api/workout/` — create a workout
+- exercise and tag endpoints to test filtering and relationships
+
+This demonstrates token authentication, user-scoped data access, and relational API behaviour.
 
 
 ---
