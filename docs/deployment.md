@@ -6,7 +6,7 @@ This project is deployed using Docker Compose with a reverse proxy and PostgreSQ
 
 ## Architecture Overview
 
-![Deployment Diagram](./images/docker_compose_setup.png)
+![Deployment Diagram](./images/Docker_compose_setup.PNG)
 
 ---
 
