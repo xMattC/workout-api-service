@@ -1,8 +1,14 @@
 # Workout API Service
 
-A production-style backend API for managing workouts, exercises, and user-specific training data.
+A backend API for building and managing structured workout programmes, supporting user-specific data, reusable exercise libraries, and complex workout composition.
 
-This project demonstrates real-world backend engineering practices including authentication, permissions, relational data modelling, testing, and containerised deployment.
+This project was built to explore how to design a backend system for structured workout planning, where:
+
+- Users manage personalised workout routines
+- Exercises are reusable across the system
+- Workouts require ordered, configurable components
+
+The focus is on backend architecture, data modelling, and API design.
 
 ---
 
@@ -23,7 +29,14 @@ Use the demo account below to test authenticated endpoints:
 3. Click **Authorize** in Swagger
 4. Enter: `Token <your_token>`
 
-You can now access endpoints.
+ **Suggested Demo Flow**
+
+1. Log in using the demo account
+2. View workouts
+3. Create a new workout
+4. Add exercises to the workout
+
+This demonstrates authentication, permissions, and relational data handling.
 
 ---
 
@@ -52,7 +65,7 @@ You can now access endpoints.
 
 ## Custom Admin Interface
 
-The Django admin has been extended into a lightweight back-office system for managing workouts and exercises.
+Built a custom back-office system using Django Admin to efficiently manage complex relational workout data.
 
 Key improvements include:
 
@@ -66,6 +79,22 @@ This enables efficient management of complex workout structures directly within 
 ![Exercises Admin Interface](./docs/images/admin_exercise_list.png)
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
 ---
+
+## 🧩 Data Modelling
+
+A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+
+This is solved using an intermediate model:
+
+Workout ↔ WorkoutExercise ↔ Exercise
+
+This allows:
+
+- Per-exercise configuration (sets, reps, rest, notes)
+- Ordering of exercises within a workout
+- Reusable exercise library across users
+
+This structure enables flexible and scalable workout composition.
 
 ## Running Locally
 
