@@ -2,7 +2,24 @@
 
 A Django REST API for managing exercises and workouts, featuring user-scoped data access, public and private resources, structured workout composition, and derived metrics such as estimated workout duration.
 
----
+
+## Deployment
+
+### API Documentation (Swagger)
+
+http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
+
+Use the following token to authenticate requests in Swagger:
+
+- Token c92a4043711d35739063249eebc8edb74df2a274
+
+
+### Demo Access
+
+http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/admin/
+
+- Email: `demo_user@workoutapp.com`
+- Password: `DemoPassword123$`
 
 ## Overview
 
@@ -18,7 +35,7 @@ This project models a workout planning system where users can:
 The system enforces strict ownership rules and provides a clean, queryable API.
 
 The API is deployed and available for live interaction via Swagger documentation.
----
+
 
 ## Development Workflow
 
@@ -40,7 +57,7 @@ The API is deployed and available for live interaction via Swagger documentation
 - Automated tests and CI
 - Dockerised setup with PostgreSQL
 
----
+
 
 ## Key Concepts
 
@@ -66,7 +83,7 @@ Workout duration is estimated based on:
 - rest time
 - assumed seconds per rep
 
----
+
 
 ## Data Model
 
@@ -75,7 +92,7 @@ Workout duration is estimated based on:
 - Workout
 - WorkoutExercise
 
----
+
 
 ## Ownership Rules
 
@@ -84,7 +101,7 @@ Workout duration is estimated based on:
 - Private exercises are only accessible to their creator
 - WorkoutExercise entries inherit workout ownership
 
----
+
 
 ## API Highlights
 
@@ -103,20 +120,6 @@ Workout duration is estimated based on:
 - Add exercises to workout
 - Retrieve nested workout details
 
----
-
-## Example Requests
-
-### Create Workout
-POST /api/workouts/
-
-### Add Exercise to Workout
-POST /api/workout-exercises/
-
-### Filter Exercises
-GET /api/exercises/?search=push
-
----
 
 ## Tech Stack
 
@@ -155,26 +158,7 @@ http://localhost:8000/api/docs/
 
 ---
 
-## Deployment
 
-The API is deployed and publicly accessible.
-
-Base URL:
-https://<your-domain>
-
-Interactive API documentation:
-https://<your-domain>/api/docs/
-
-## Live API Usage
-
-### Example: List Exercises
-GET https://<your-domain>/api/exercises/
-
-### Example: Create Workout (Authenticated)
-POST https://<your-domain>/api/workouts/
-
-Authorization:
-Token <your-token>
 
 ### Production Setup
 
