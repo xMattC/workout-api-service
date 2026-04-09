@@ -1,6 +1,6 @@
 # Deployment
 
-This project is deployed using Docker Compose with a reverse proxy and PostgreSQL database.
+This project includes separate Docker Compose configurations for development and production-style deployment.
 
 ---
 
@@ -10,60 +10,78 @@ This project is deployed using Docker Compose with a reverse proxy and PostgreSQ
 
 ---
 
-## Services
+## Production Services
 
-### App (Django)
-- Runs the API via uWSGI
-- Handles business logic and requests
+The production deployment uses three services:
 
-### Database (PostgreSQL)
-- Stores application data
-- Persisted via Docker volumes
+### App
+- Runs the Django application
+- Connects to PostgreSQL
+- Writes collected static files to a shared volume
 
-### Proxy (Nginx)
-- Handles incoming requests
-- Serves static/media files
-- Routes API traffic to Django app
+### Database
+- PostgreSQL database
+- Data persisted using a named Docker volume
+
+### Proxy
+- Nginx reverse proxy
+- Accepts incoming HTTP traffic
+- Serves static files from a shared volume
+- Forwards application requests to the Django app
 
 ---
 
-## Data Persistence
+## Persistent Volumes
 
-Docker volumes are used to store:
+The production setup uses named volumes for persistence:
 
-- PostgreSQL data (`postgres-data`)
-- Static/media files (`static-data`)
+- `postgres-data` → PostgreSQL data
+- `static_data` → static files shared between app and proxy
 
-This ensures data is preserved across container restarts.
+This ensures important data survives container restarts.
+
+---
+
+## Environment Configuration
+
+The production setup is driven by environment variables, including:
+
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `DJANGO_SECRET_KEY`
+- `DJANGO_ALLOWED_HOSTS`
+
+---
+
+## Development vs Production
+
+### Development
+The local development setup:
+- uses Django’s development server
+- bind-mounts the application source code
+- runs migrations automatically on startup
+- uses separate development volumes
+
+### Production
+The deployment setup:
+- separates the proxy and app services
+- persists database and static data in named volumes
+- exposes HTTP traffic through the proxy container
 
 ---
 
 ## Request Flow
 
-1. User sends request to Nginx  
-2. Nginx routes API requests to Django app  
-3. Django interacts with PostgreSQL  
-4. Response returned via Nginx  
-
----
-
-## Running in Production Mode
-
-The application can be run using Docker Compose:
-```
-docker-compose up --build
-```
-
-Environment variables control:
-- database credentials
-- secret keys
-- debug mode
+1. A client sends a request to the proxy
+2. The proxy forwards application requests to the Django app
+3. The Django app reads/writes application data in PostgreSQL
+4. Static files are served through the shared static volume
 
 ---
 
 ## Notes
 
-- Static and media files are served via Nginx  
-- Database and file storage persist via volumes  
-- Architecture mirrors a typical production Django setup  
-
+- Development and deployment use different Compose files
+- The deployment architecture mirrors a typical Django + PostgreSQL + Nginx setup
+- Static assets are separated from the application container through shared storage
