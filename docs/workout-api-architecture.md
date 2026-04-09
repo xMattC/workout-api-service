@@ -4,7 +4,7 @@ This document describes the core architecture of the workout system, focusing on
 
 ---
 
-## 🧩 Domain Overview
+## Domain Overview
 
 The system is designed to support structured workout planning where:
 
@@ -16,17 +16,13 @@ The architecture is built around a relational model that supports flexibility, r
 
 ---
 
-## 📊 Domain Model (ERD)
+## Domain Model (ERD)
 
-> *(Insert ERD diagram here)*
-
-```
-[ Place your ERD image here, e.g. ./images/workout_erd.png ]
-```
+![Workout ERD](./images/model-erd.png)
 
 ---
 
-## 🏗️ Core Entities
+## Core Entities
 
 ### User
 
@@ -94,7 +90,7 @@ Links `Workout` and `Exercise` while storing additional metadata.
 
 ---
 
-## 🔗 Relationship Design
+## Relationship Design
 
 ### Why an Intermediate Model?
 
@@ -117,7 +113,7 @@ This enables:
 
 ---
 
-## 🏷️ Tagging System
+## Tagging System
 
 The system includes tagging for both workouts and exercises.
 
@@ -134,7 +130,7 @@ The system includes tagging for both workouts and exercises.
 
 ---
 
-## 🔐 Ownership & Data Isolation
+## Ownership & Data Isolation
 
 The system enforces strict user-level data ownership.
 
@@ -155,7 +151,7 @@ The system enforces strict user-level data ownership.
 
 ---
 
-## 🔄 Data Flow
+## Data Flow
 
 ### Creating a Workout
 
@@ -183,7 +179,7 @@ The system enforces strict user-level data ownership.
 
 ---
 
-## ⚙️ Derived Logic
+## Derived Logic
 
 ### Workout Duration
 
@@ -192,7 +188,7 @@ The system enforces strict user-level data ownership.
 
 ---
 
-## 🛠️ API Design Considerations
+## API Design Considerations
 
 The API is designed to:
 
@@ -208,7 +204,7 @@ The API is designed to:
 
 ---
 
-## 🧠 Design Decisions
+## Design Decisions
 
 ### 1. Intermediate Model over Many-to-Many
 
@@ -234,7 +230,7 @@ Used to manage complex relational data efficiently without building a custom fro
 
 ---
 
-## 🚀 Summary
+## Summary
 
 This architecture enables:
 
