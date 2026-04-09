@@ -15,10 +15,12 @@ This project explores how to design a backend system for structured workout plan
 The focus is on backend architecture, data modelling, and API design.
 
 ---
+## 🚀 Live Demo & API Usage
 
-## 🚀 Live Demo
+**Swagger Docs:**
+http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
 
-* **Swagger Docs:** https://workout-api-service.onrender.com/swagger/
+---
 
 ### Demo Access
 
@@ -27,22 +29,59 @@ Use the seeded demo account to explore authenticated endpoints with preloaded da
 * **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
 * **Password:** DemoPassword123$
 
-### Suggested Demo Flow
+---
 
-1. Log in via `POST /api/user/token/`
-2. Authorise in Swagger using `Token <your_token>`
-3. Retrieve your user profile (`/api/user/me/`)
-4. View existing workouts
-5. Create a new workout
-6. Add exercises to the workout
+### Step-by-Step Demo Flow
+
+#### 1. Obtain Authentication Token
+
+In Swagger, open:
+
+`POST /api/user/token/`
+
+Click **"Try it out"**, then enter:
+
+```json
+{
+  "email": "api_demo@workoutapp.com",
+  "password": "DemoPassword123$"
+}
+```
+
+Click **Execute**, then copy the returned token.
+
+---
+
+#### 2. Authorise Requests
+
+Click the **Authorize** button in Swagger and enter:
+
+```
+Token <your_token>
+```
+
+---
+
+#### 3. Explore the API
+
+Try the following endpoints:
+
+* `GET /api/user/me/` → View your user profile
+* `GET /api/workout/` → View existing workouts
+* `POST /api/workout/` → Create a new workout
+* Add exercises to a workout
+
+This demonstrates authentication, permissions, and relational data handling.
+
+---
 
 ### Example API Usage
 
 #### Create User
 
-POST `/api/user/create/`
+`POST /api/user/create/`
 
-Request:
+**Request:**
 
 ```json
 {
@@ -52,7 +91,7 @@ Request:
 }
 ```
 
-Response:
+**Response:**
 
 ```json
 {
@@ -61,6 +100,7 @@ Response:
   "name": "Test User"
 }
 ```
+
 
 ---
 
@@ -78,9 +118,7 @@ Response:
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
 
-This is solved using an intermediate model:
-
-Workout → WorkoutExercise → Exercise
+This is solved using an intermediate model: `Workout → WorkoutExercise → Exercise`
 
 This allows:
 
