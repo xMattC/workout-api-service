@@ -13,6 +13,7 @@ The focus is on backend architecture, data modelling, and API design.
 ---
 
 ## Live Demo
+The API is fully documented using Swagger/OpenAPI, providing an interactive interface for exploring endpoints, authentication, and request/response structures.
 
 **Swagger Docs:** (http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/#/)
 
@@ -38,6 +39,28 @@ Use the demo account below to test authenticated endpoints:
 
 This demonstrates authentication, permissions, and relational data handling.
 
+**Example API Usage**
+
+Create User:
+```
+POST /api/user/create/
+```
+Request:
+```
+{
+  "email": "test@example.com",
+  "password": "test123",
+  "name": "Test User"
+}
+```
+Response:
+```
+{
+  "id": 1,
+  "email": "test@example.com",
+  "name": "Test User"
+}
+```
 ---
 
 ## Key Features
@@ -63,6 +86,16 @@ This demonstrates authentication, permissions, and relational data handling.
 
 ---
 
+## Engineering Practices
+
+- **Test-Driven Development (TDD)** – Core functionality developed with tests written prior to implementation
+- **Feature Branch Workflow** – Isolated development using feature branches with pull request reviews
+- **Continuous Integration (CI)** – GitHub Actions pipeline running tests and linting on each pull request
+- **Dockerised Environment** – Consistent development and execution using Docker Compose
+- **Environment Configuration** – Settings managed via environment variables
+- **Code Quality Enforcement** – Linting with flake8
+- **Modular Architecture** – Structured Django apps with clear separation of concerns
+- 
 ## Custom Admin Interface
 
 Built a custom back-office system using Django Admin to efficiently manage complex relational workout data.
@@ -80,7 +113,7 @@ This enables efficient management of complex workout structures directly within 
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
 ---
 
-## 🧩 Data Modelling
+## Data Modelling
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
 
@@ -96,6 +129,13 @@ This allows:
 
 This structure enables flexible and scalable workout composition.
 
+## Validation & Error Handling
+
+- Invalid credentials return HTTP 400
+- Unauthorized access returns HTTP 401
+- Users cannot access other users’ data (403)
+- Input validation enforced via serializers
+  
 ## Running Locally
 
 ### 1. Clone Repository
@@ -175,7 +215,7 @@ This enables:
 ### Permissions
 
 * Auth required for protected routes
-* Object-level permission checks enforced
+* Permissions are enforced using DRF TokenAuthentication and IsAuthenticated, with querysets filtered by the authenticated user to ensure strict data ownership.
 
 ---
 
@@ -184,18 +224,6 @@ This enables:
 Client → API → Auth → Services → Database
 
 More detailed documentation available in `/docs`.
-
----
-
-## Demo Preview
-
-*(Add screenshots or GIFs here)*
-
-Suggested:
-
-* Swagger usage
-* Admin dashboard
-* Workout creation flow
 
 ---
 
