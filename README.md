@@ -73,15 +73,9 @@ Try the following endpoints:
 
 This demonstrates authentication, permissions, and relational data handling.
 
----
+Example: `POST /api/user/create/`
 
-### Example API Usage
-
-#### Create User
-
-`POST /api/user/create/`
-
-**Request:**
+Request:
 
 ```json
 {
@@ -91,7 +85,7 @@ This demonstrates authentication, permissions, and relational data handling.
 }
 ```
 
-**Response:**
+Response:
 
 ```json
 {
