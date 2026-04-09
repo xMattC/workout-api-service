@@ -1,190 +1,164 @@
-# Workout API Backend
+# Workout API Service
 
-A Django REST API for managing exercises and workouts, featuring user-scoped data access, public and private resources, structured workout composition, and derived metrics such as estimated workout duration.
+A production-style backend API for managing workouts, exercises, and user-specific training data.
 
+This project demonstrates real-world backend engineering practices including authentication, permissions, relational data modelling, testing, and containerised deployment.
 
-## Deployment
+---
 
-### API Documentation (Swagger)
+## Live Demo
 
-http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
+**Swagger Docs:** (http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/#/)
 
-Use the following token to authenticate requests in Swagger:
+**Demo Access**
+Use the demo account below to test authenticated endpoints:
 
-- Token c92a4043711d35739063249eebc8edb74df2a274
+* **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
+* **Password:** DemoPassword123$
 
+**How to Authenticate**
 
-### Demo Access
+1. POST `/api/user/token/`
+2. Copy the returned access token
+3. Click **Authorize** in Swagger
+4. Enter: `Token <your_token>`
 
-http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/admin/
+You can now access endpoints.
 
-- Email: `demo_user@workoutapp.com`
-- Password: `DemoPassword123$`
+---
 
-## Overview
+## Key Features
 
-This project models a workout planning system where users can:
+* Token-based authentication
+* Object-level permissions (user-scoped data)
+* Public vs private exercise system
+* Workout → Exercise join model
+* Derived workout data (e.g. duration)
+* Fully documented API (Swagger/OpenAPI)
+* Dockerised setup (PostgreSQL + Django)
+* Automated testing + linting
 
-- Create and manage workouts
-- Compose workouts from exercises with sets, reps, and rest
-- Use a shared library of public exercises
-- Create private custom exercises
-- Upload and manage exercise images
-- Retrieve structured workout data with derived metrics
-
-The system enforces strict ownership rules and provides a clean, queryable API.
-
-The API is deployed and available for live interaction via Swagger documentation.
-
-
-## Development Workflow
-
-- Feature branch workflow (no direct commits to main)
-- Pull requests required for all changes
-- CI pipeline runs on PR (tests, linting)
-- Squash merges used to maintain clean history
-
-## Core Features
-
-- Token-based authentication
-- User-scoped workouts and private data
-- Public (seeded) and private exercises
-- Workout composition via `WorkoutExercise`
-- Estimated workout duration calculation
-- Filtering, search, ordering, pagination
-- Image upload for exercises
-- OpenAPI / Swagger documentation
-- Automated tests and CI
-- Dockerised setup with PostgreSQL
-
-
-
-## Key Concepts
-
-### User-Scoped Access Control
-All workouts and private exercises are owned by a user. Users cannot access or modify other users’ data.
-
-### Public vs Private Resources
-- Public exercises are system-provided and read-only
-- Private exercises are user-created and editable only by their owner
-
-### Enriched Join Model
-`WorkoutExercise` is a first-class entity linking workouts and exercises, containing:
-- order
-- sets
-- reps
-- rest time
-- optional notes
-
-### Derived Metrics
-Workout duration is estimated based on:
-- sets
-- reps
-- rest time
-- assumed seconds per rep
-
-
-
-## Data Model
-
-- User
-- Exercise (public/private)
-- Workout
-- WorkoutExercise
-
-
-
-## Ownership Rules
-
-- Users can only access their own workouts
-- Public exercises are readable but not editable
-- Private exercises are only accessible to their creator
-- WorkoutExercise entries inherit workout ownership
-
-
-
-## API Highlights
-
-### Authentication
-- Create user
-- Obtain token
-- Manage profile
-
-### Exercises
-- List (public + private)
-- Create private exercise
-- Upload image
-
-### Workouts
-- Create workout
-- Add exercises to workout
-- Retrieve nested workout details
-
+---
 
 ## Tech Stack
 
-- Django
-- Django REST Framework
-- PostgreSQL
-- Docker
-- drf-spectacular
+* Python / Django
+* Django REST Framework
+* PostgreSQL
+* Docker & Docker Compose
+* Swagger (drf-yasg)
 
 ---
 
-## Local Setup
+## Running Locally
 
-```bash
-git clone <repo>
-cd backend-app-api
-docker-compose up
+### 1. Clone Repository
+
+```
+git clone https://github.com/xMattC/workout-api-service.git
+cd workout-api-service
 ```
 
----
+### 2. Start Development Server & Apply Migrations
 
-## Running Tests
-
-```bash
-docker-compose run app python manage.py test
+```
+docker-compose run --rm app sh -c "python manage.py runserver"
+docker-compose run --rm app sh -c "python manage.py makemigrations"
+docker-compose run --rm app sh -c "python manage.py migrate"
 ```
 
----
+### 4. Seed Demo Data
 
-## Documentation
+Custom management commands are included to populate realistic data.
 
-Swagger UI available at:
 ```
-http://localhost:8000/api/docs/
+docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
+docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
 ```
 
+### 5. Testing & Linting
+
+```
+docker-compose run --rm app sh -c "python manage.py test && flake8"
+```
+
+### 6. Create Superuser
+
+```
+docker-compose run --rm app sh -c "python manage.py createsuperuser"
+```
+
+### 7. Accessing the Admin Interface
+
+Once you have created a superuser, you can log into the Django admin panel:
+```
+docker-compose run --rm app sh -c "python manage.py runserver"
+```
+* **Admin URL:** http://localhost:8000/admin/
+* Use the credentials you created via `createsuperuser`
+* Full admin access
+
+You can:
+  
+  * Manage users
+  * View/edit workouts
+  * Inspect exercise relationships
+  * Explore join model data (`WorkoutExercise`)
+
 ---
 
+## Design Highlights
 
+### Ownership Model
 
-### Production Setup
+* Users can only access their own workouts
+* Exercises can be public or user-owned
 
-- Django running in production mode (DEBUG=False)
-- PostgreSQL database
-- Environment variables for secrets and configuration
-- Static and media files handled via configured storage
-- HTTPS enabled
+### Join Model
 
-### Notes
+Workouts and exercises are linked via:
 
-- Public endpoints are available for testing via Swagger
-- Authentication is required for protected routes
+`WorkoutExercise`
+
+This enables:
+
+* Ordered workouts
+* Per-exercise metadata
+* Flexible composition
+
+### Permissions
+
+* Auth required for protected routes
+* Object-level permission checks enforced
 
 ---
 
-## Screenshots
+## Architecture Overview
 
-- Swagger UI (live deployed API)
-- Workout detail response with nested exercises
-- Exercise list with filtering
+Client → API → Auth → Services → Database
+
+More detailed documentation available in `/docs`.
 
 ---
 
-## Future Improvements
+## Demo Preview
 
-- Program (multi-workout) support
-- Expanded filtering options
-- Additional derived metrics
+*(Add screenshots or GIFs here)*
+
+Suggested:
+
+* Swagger usage
+* Admin dashboard
+* Workout creation flow
+
+---
+
+## Summary
+
+This project demonstrates:
+
+* Real-world API design
+* Authentication & security practices
+* Relational modelling beyond CRUD
+* Testing, validation, and CI workflows
+* Containerised development environment
