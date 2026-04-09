@@ -1,206 +1,280 @@
-# Workout API Backend
+# Workout API Service
 
-A Django REST API for managing exercises and workouts, featuring user-scoped data access, public and private resources, structured workout composition, and derived metrics such as estimated workout duration.
-
----
-
-## Overview
-
-This project models a workout planning system where users can:
-
-- Create and manage workouts
-- Compose workouts from exercises with sets, reps, and rest
-- Use a shared library of public exercises
-- Create private custom exercises
-- Upload and manage exercise images
-- Retrieve structured workout data with derived metrics
-
-The system enforces strict ownership rules and provides a clean, queryable API.
-
-The API is deployed and available for live interaction via Swagger documentation.
----
-
-## Development Workflow
-
-- Feature branch workflow (no direct commits to main)
-- Pull requests required for all changes
-- CI pipeline runs on PR (tests, linting)
-- Squash merges used to maintain clean history
-
-## Core Features
-
-- Token-based authentication
-- User-scoped workouts and private data
-- Public (seeded) and private exercises
-- Workout composition via `WorkoutExercise`
-- Estimated workout duration calculation
-- Filtering, search, ordering, pagination
-- Image upload for exercises
-- OpenAPI / Swagger documentation
-- Automated tests and CI
-- Dockerised setup with PostgreSQL
+A backend API for building and managing structured workout programmes, supporting user-specific data, reusable exercise libraries, and complex workout composition.
 
 ---
 
-## Key Concepts
+## 🎯 Project Goal
 
-### User-Scoped Access Control
-All workouts and private exercises are owned by a user. Users cannot access or modify other users’ data.
+This project explores how to design a backend system for structured workout planning, where:
 
-### Public vs Private Resources
-- Public exercises are system-provided and read-only
-- Private exercises are user-created and editable only by their owner
+* Users manage personalised workout routines
+* Exercises are reusable across the system
+* Workouts require ordered, configurable components
 
-### Enriched Join Model
-`WorkoutExercise` is a first-class entity linking workouts and exercises, containing:
-- order
-- sets
-- reps
-- rest time
-- optional notes
+The focus is on backend architecture, data modelling, and API design.
 
-### Derived Metrics
-Workout duration is estimated based on:
-- sets
-- reps
-- rest time
-- assumed seconds per rep
+---
+## 🚀 Live Demo & API Usage
+
+**Swagger Docs:**
+http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
 
 ---
 
-## Data Model
+### Demo Access
 
-- User
-- Exercise (public/private)
-- Workout
-- WorkoutExercise
+Use the seeded demo account to explore authenticated endpoints with preloaded data:
 
----
-
-## Ownership Rules
-
-- Users can only access their own workouts
-- Public exercises are readable but not editable
-- Private exercises are only accessible to their creator
-- WorkoutExercise entries inherit workout ownership
+* **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
+* **Password:** DemoPassword123$
 
 ---
 
-## API Highlights
+### Step-by-Step Demo Flow
 
-### Authentication
-- Create user
-- Obtain token
-- Manage profile
+#### 1. Obtain Authentication Token
 
-### Exercises
-- List (public + private)
-- Create private exercise
-- Upload image
+In Swagger, open:
 
-### Workouts
-- Create workout
-- Add exercises to workout
-- Retrieve nested workout details
+`POST /api/user/token/`
 
----
+Click **"Try it out"**, then enter:
 
-## Example Requests
+```json
+{
+  "email": "api_demo@workoutapp.com",
+  "password": "DemoPassword123$"
+}
+```
 
-### Create Workout
-POST /api/workouts/
-
-### Add Exercise to Workout
-POST /api/workout-exercises/
-
-### Filter Exercises
-GET /api/exercises/?search=push
+Click **Execute**, then copy the returned token.
 
 ---
 
-## Tech Stack
+#### 2. Authorise Requests
 
-- Django
-- Django REST Framework
-- PostgreSQL
-- Docker
-- drf-spectacular
+Click the **Authorize** button in Swagger and enter:
+
+```
+Token <your_token>
+```
 
 ---
 
-## Local Setup
+#### 3. Explore the API
+
+Try the following endpoints:
+
+* `GET /api/user/me/` → View your user profile
+* `GET /api/workout/` → View existing workouts
+* `POST /api/workout/` → Create a new workout
+* Add exercises to a workout
+
+This demonstrates authentication, permissions, and relational data handling.
+
+Example: `POST /api/user/create/`
+
+Request:
+
+```json
+{
+  "email": "test@example.com",
+  "password": "test123",
+  "name": "Test User"
+}
+```
+
+Response:
+
+```json
+{
+  "id": 1,
+  "email": "test@example.com",
+  "name": "Test User"
+}
+```
+
+
+---
+
+## 🧠 Key Features
+
+* Token-based authentication
+* User-scoped data permissions
+* Structured workout composition
+* Fully documented API (Swagger/OpenAPI)
+* Dockerised development environment
+
+---
+
+## 🧩 Data Modelling
+
+A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+
+This is solved using an intermediate model: `Workout → WorkoutExercise → Exercise`
+
+This allows:
+
+* Per-exercise configuration (sets, reps, rest, notes)
+* Ordering of exercises within a workout
+* Reusable exercise library across users
+
+This structure enables flexible and scalable workout composition.
+
+---
+
+## 🔐 Authentication & Permissions
+
+Authentication is handled using DRF TokenAuthentication.
+
+Permissions are enforced using:
+
+* `IsAuthenticated` for protected routes
+* Querysets filtered by the authenticated user
+* Strict ownership rules preventing access to other users’ data
+
+---
+
+## 🛠️ Custom Admin Interface
+
+A custom back-office system has been built using Django Admin to manage complex relational workout data efficiently.
+
+### Key Enhancements
+
+* Inline editing of workout exercises
+* Image previews for exercise visualisation
+* Structured workout configuration (sets, reps, rest, notes)
+* Clear organisation of relational data
+
+---
+
+### Exercise Management
+
+Provides a clear overview of all exercises, including difficulty, visibility, and image previews.
+
+![Exercises Admin Interface](./docs/images/admin_exercise_list.png)
+
+---
+
+### Workout Builder
+
+Custom inline editing enables efficient construction of workouts with full control over exercise order and configuration.
+
+![Workout Admin Interface](./docs/images/admin_workout_inline.png)
+
+---
+
+## 📊 Architecture Overview
+
+Client → API → Authentication → Business Logic → Database
+
+The API is fully documented using Swagger/OpenAPI, providing an interactive interface for exploring endpoints and request/response structures.
+
+---
+
+## ⚠️ Validation & Error Handling
+
+* Invalid credentials return HTTP 400
+* Unauthenticated requests return HTTP 401
+* Unauthorized access returns HTTP 403
+* Input validation enforced via DRF serializers
+
+---
+
+## 🧱 Engineering Practices
+
+Development follows a structured workflow ensuring code quality and reliability:
+
+* **Test-Driven Development (TDD)** – Core functionality built with tests first
+* **Feature Branch Workflow** – Isolated development via pull requests
+* **Continuous Integration (CI)** – GitHub Actions running tests and linting
+* **Dockerised Environment** – Consistent development setup
+* **Environment Configuration** – Managed via environment variables
+* **Code Quality Enforcement** – Linting with flake8
+* **Modular Architecture** – Clear separation of Django apps
+
+---
+
+## 📦 Running Locally
+
+### 1. Clone Repository
 
 ```bash
-git clone <repo>
-cd backend-app-api
-docker-compose up
+git clone https://github.com/xMattC/workout-api-service.git
+cd workout-api-service
 ```
 
----
-
-## Running Tests
+### 2. Run Migrations
 
 ```bash
-docker-compose run app python manage.py test
+docker-compose run --rm app sh -c "python manage.py migrate"
 ```
+
+### 3. Seed Demo Data
+
+```bash
+docker-compose run --rm app sh -c "python manage.py seed_users"
+docker-compose run --rm app sh -c "python manage.py seed_exercises"
+```
+
+### 4. Create Superuser
+```
+docker-compose run --rm app sh -c "python manage.py createsuperuser"
+```
+Follow the prompts to set:
+- Email
+- Password
+
+
+### 5. Start Server
+```
+docker-compose run --rm app sh -c "python manage.py runserver"
+```
+
+### Accessing the Admin Interface
+
+Once the server is running, open:
+
+http://localhost:8000/admin/
+
+Log in using the **superuser credentials** you created in the previous step.
+
+After logging in, you can:
+- Manage users  
+- View and edit workouts  
+- Explore exercises and relationships  
+- Use the custom admin interface for structured workout management  
 
 ---
 
-## Documentation
+### API Documentation
 
-Swagger UI available at:
-```
+Swagger docs available at:
+
 http://localhost:8000/api/docs/
+
+---
+
+## Testing & Linting
+
+```bash
+docker-compose run --rm app sh -c "python manage.py test && flake8"
 ```
 
 ---
 
-## Deployment
+## Development Utilities
 
-The API is deployed and publicly accessible.
-
-Base URL:
-https://<your-domain>
-
-Interactive API documentation:
-https://<your-domain>/api/docs/
-
-## Live API Usage
-
-### Example: List Exercises
-GET https://<your-domain>/api/exercises/
-
-### Example: Create Workout (Authenticated)
-POST https://<your-domain>/api/workouts/
-
-Authorization:
-Token <your-token>
-
-### Production Setup
-
-- Django running in production mode (DEBUG=False)
-- PostgreSQL database
-- Environment variables for secrets and configuration
-- Static and media files handled via configured storage
-- HTTPS enabled
-
-### Notes
-
-- Public endpoints are available for testing via Swagger
-- Authentication is required for protected routes
+```bash
+docker-compose run --rm app sh -c "python manage.py shell"
+```
 
 ---
 
-## Screenshots
+## Notes for Reviewers
 
-- Swagger UI (live deployed API)
-- Workout detail response with nested exercises
-- Exercise list with filtering
-
----
-
-## Future Improvements
-
-- Program (multi-workout) support
-- Expanded filtering options
-- Additional derived metrics
+* Backend-focused project (no frontend)
+* Admin interface is customised but not publicly exposed
+* Demo data is reproducible locally via management commands
+* Designed to reflect production-style backend patterns
