@@ -20,16 +20,12 @@ The focus is on backend architecture, data modelling, and API design.
 
 * **Swagger Docs:** https://workout-api-service.onrender.com/swagger/
 
----
-
 ### Demo Access
 
 Use the seeded demo account to explore authenticated endpoints with preloaded data:
 
 * **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
 * **Password:** DemoPassword123$
-
----
 
 ### Suggested Demo Flow
 
@@ -39,8 +35,6 @@ Use the seeded demo account to explore authenticated endpoints with preloaded da
 4. View existing workouts
 5. Create a new workout
 6. Add exercises to the workout
-
----
 
 ### Example API Usage
 
@@ -192,17 +186,45 @@ docker-compose run --rm app sh -c "python manage.py seed_users"
 docker-compose run --rm app sh -c "python manage.py seed_exercises"
 ```
 
-### 4. Start Server
+### 4. Create Superuser
+```
+docker-compose run --rm app sh -c "python manage.py createsuperuser"
+```
+Follow the prompts to set:
+- Email
+- Password
 
-```bash
+
+### 5. Start Server
+```
 docker-compose run --rm app sh -c "python manage.py runserver"
 ```
 
-Open: http://localhost:8000/swagger/
+### Accessing the Admin Interface
+
+Once the server is running, open:
+
+http://localhost:8000/admin/
+
+Log in using the **superuser credentials** you created in the previous step.
+
+After logging in, you can:
+- Manage users  
+- View and edit workouts  
+- Explore exercises and relationships  
+- Use the custom admin interface for structured workout management  
 
 ---
 
-## 🧪 Testing & Linting
+### API Documentation
+
+Swagger docs available at:
+
+http://localhost:8000/api/docs/
+
+---
+
+## Testing & Linting
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py test && flake8"
@@ -210,7 +232,7 @@ docker-compose run --rm app sh -c "python manage.py test && flake8"
 
 ---
 
-## 🛠️ Development Utilities
+## Development Utilities
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py shell"
@@ -218,15 +240,9 @@ docker-compose run --rm app sh -c "python manage.py shell"
 
 ---
 
-## 📌 Notes for Reviewers
+## Notes for Reviewers
 
 * Backend-focused project (no frontend)
 * Admin interface is customised but not publicly exposed
 * Demo data is reproducible locally via management commands
 * Designed to reflect production-style backend patterns
-
----
-
-## 📬 Contact
-
-For admin demo access or questions, feel free to reach out.
