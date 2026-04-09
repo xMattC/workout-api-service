@@ -50,6 +50,23 @@ You can now access endpoints.
 
 ---
 
+## Custom Admin Interface
+
+The Django admin has been extended into a lightweight back-office system for managing workouts and exercises.
+
+Key improvements include:
+
+- Inline workout exercise editing
+- Image previews for exercises
+- Structured workout configuration (sets, reps, rest, notes)
+- Clear visual grouping of workout components
+
+This enables efficient management of complex workout structures directly within the admin interface.
+
+![Exercises Admin Interface](./docs/images/admin_exercise_list.png)
+![Workout Admin Interface](./docs/images/admin_workout_inline.png)
+---
+
 ## Running Locally
 
 ### 1. Clone Repository
