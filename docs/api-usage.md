@@ -7,30 +7,20 @@ This document explains how to interact with the Workout API, including authentic
 ## Base URL
 
 Local:
-
-```
-http://localhost:8000/
-```
+`http://localhost:8000/`
 
 Production:
-
-```
-http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/
-```
+`http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/`
 
 ---
 
 ## Authentication
 
-The API uses **Token Authentication**.
+The API uses DRF Token Authentication.
 
 ### Obtain Token
 
-Endpoint:
-
-```
-POST /api/user/token/
-```
+`POST /api/user/token/`
 
 Request:
 
@@ -49,8 +39,6 @@ Response:
 }
 ```
 
----
-
 ### Using the Token
 
 Include the token in the request header:
@@ -65,8 +53,8 @@ Authorization: Token <your_token>
 
 Use the seeded demo account for testing:
 
-* **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
-* **Password:** DemoPassword123$
+* **Email:** `api_demo@workoutapp.com`
+* **Password:** `DemoPassword123$`
 
 ---
 
@@ -74,15 +62,12 @@ Use the seeded demo account for testing:
 
 ### 1. Retrieve Current User
 
-```
-GET /api/user/me/
-```
+`GET /api/user/me/`
 
-Response:
+Example response:
 
 ```json
 {
-  "id": 1,
   "email": "api_demo@workoutapp.com",
   "name": "Demo User"
 }
@@ -90,11 +75,30 @@ Response:
 
 ---
 
-### 2. Create a Workout
+### 2. List Workouts
+
+`GET /api/workout/workouts/`
+
+Optional filters:
+
+* `?exercises=1,2`
+* `?wo_tags=1,2`
+
+Examples:
 
 ```
-POST /api/workout/
+GET /api/workout/workouts/?exercises=1,2
+GET /api/workout/workouts/?wo_tags=3
+GET /api/workout/workouts/?exercises=1,2&wo_tags=3
 ```
+
+Returns workouts owned by the authenticated user.
+
+---
+
+### 3. Create a Workout
+
+`POST /api/workout/workouts/`
 
 Request:
 
@@ -102,63 +106,130 @@ Request:
 {
   "title": "Upper Body Push",
   "description": "Chest and triceps workout",
-  "duration_minutes": 45
+  "duration_minutes": 45,
+  "wo_tags": [
+    { "name": "Push Day" }
+  ],
+  "workout_exercises": [
+    {
+      "exercise": 1,
+      "order": 1,
+      "sets": 4,
+      "reps": 10,
+      "rest_seconds": 90
+    }
+  ]
 }
 ```
 
----
+Notes:
 
-### 3. List Workouts
-
-```
-GET /api/workout/
-```
-
-Returns all workouts belonging to the authenticated user.
+* `wo_tags` is optional
+* `workout_exercises` is optional
+* Nested relationships are replaced on update, not merged
 
 ---
 
-### 4. Add Exercises to a Workout
+### 4. Retrieve a Workout in Detail
 
-Exercises are added via the **WorkoutExercise** relationship.
+`GET /api/workout/workouts/{id}/`
 
-Example request (structure may vary depending on serializer):
-
-```json
-{
-  "exercise": 1,
-  "order": 1,
-  "sets": 3,
-  "reps": 12,
-  "rest_seconds": 60,
-  "user_notes": "Focus on form"
-}
-```
+Returns a fully expanded workout including nested exercise data.
 
 ---
 
-### 5. View Exercises
+### 5. List Exercises
 
-```
-GET /api/exercise/
-```
+`GET /api/workout/exercises/`
 
 Returns:
 
 * Public exercises
 * User-created exercises
 
+Optional filters:
+
+* `?assigned_only=1`
+* `?ex_tags=1,2`
+
+Examples:
+
+```
+GET /api/workout/exercises/?assigned_only=1
+GET /api/workout/exercises/?ex_tags=1,2
+```
+
+---
+
+### 6. Create an Exercise
+
+`POST /api/workout/exercises/`
+
+Request:
+
+```json
+{
+  "name": "Incline Dumbbell Press",
+  "difficulty": "intermediate",
+  "ex_tags": [
+    { "name": "Dumbbell", "type": "equipment" },
+    { "name": "Chest", "type": "primary_muscle" }
+  ]
+}
+```
+
+Notes:
+
+* Normal users create private exercises
+* Only staff users may create public exercises
+
+---
+
+### 7. Upload Exercise Images
+
+`POST /api/workout/exercises/{id}/upload-image/`
+
+Accepted fields:
+
+* `image_1`
+* `image_2`
+
+Supports partial updates.
+
+---
+
+### 8. Workout Tags
+
+`GET /api/workout/workouts-tags/`
+`POST /api/workout/workouts-tags/`
+
+Optional filter:
+
+* `?assigned_only=1`
+
+---
+
+### 9. Exercise Tags
+
+`GET /api/workout/exercises-tags/`
+`POST /api/workout/exercises-tags/`
+
+Optional filter:
+
+* `?assigned_only=1`
+
+System tags and user-created tags are returned.
+Only user-owned custom tags can be modified.
+
 ---
 
 ## Swagger Usage
 
-The API is fully documented using Swagger:
+Swagger is available at:
 
-```
-/api/docs/
-```
+`/api/docs/`
 
-### Steps:
+Steps:
 
 1. Open Swagger
 2. Call `POST /api/user/token/`
@@ -170,47 +241,24 @@ The API is fully documented using Swagger:
 Token <your_token>
 ```
 
-You can now interact with all protected endpoints.
-
 ---
 
 ## Error Handling
 
 Common responses:
 
-* **400 Bad Request** → Invalid input or credentials
-* **401 Unauthorized** → Missing or invalid token
-* **403 Forbidden** → Accessing another user’s data
+* `400 Bad Request` → Invalid input or credentials
+* `401 Unauthorized` → Missing or invalid token
+* `403 Forbidden` → Attempting to modify restricted resources
 
 ---
 
 ## Permissions Summary
 
-* All endpoints (except user creation and token) require authentication
-* Users can only access their own workouts
-* Exercises are:
-
-  * Public (accessible to all)
-  * Private (owned by user)
-
----
-
-## Notes
-
-* All requests and responses are JSON
-* Authentication is required for most operations
-* The API structure reflects the underlying relational model
-* Use Swagger for easiest exploration and testing
+* `POST /api/user/create/` and `POST /api/user/token/` are public
+* All other endpoints require authentication
+* Users can only access their own workouts and workout tags
+* Exercises include public + user-owned private exercises
+* System exercise tags are read-only for non-admin users
 
 ---
-
-## Summary
-
-This API supports:
-
-* User authentication via token
-* Workout creation and management
-* Flexible exercise composition
-* Strict user-level data isolation
-
-It is designed to provide a clean and scalable backend for structured workout planning.
