@@ -72,7 +72,7 @@ class BaseAttrViewSet(
 
 
 # ---------------------------------------------------------------------
-# API VIEWSETS
+# WorkoutViewSet - manages workouts for the authenticated user
 # ---------------------------------------------------------------------
 @extend_schema_view(
     list=extend_schema(
@@ -88,7 +88,7 @@ class BaseAttrViewSet(
                 name="wo_tags",
                 type=OpenApiTypes.STR,
                 location=OpenApiParameter.QUERY,
-                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.",
+                description="Comma-separated list of workout tag IDs. Returns workouts matching any of the supplied tag IDs.", # noqa
             ),
         ],
     ),
@@ -152,6 +152,9 @@ class WorkoutViewSet(viewsets.ModelViewSet):
         logger.info("Workout create requested by user_id=%s", self.request.user.id)
 
 
+# ---------------------------------------------------------------------
+# WorkoutTagViewSet - manages workout tags for the authenticated user
+# ---------------------------------------------------------------------
 @extend_schema_view(
     list=extend_schema(
         description="List workout tags for the authenticated user.",
@@ -191,6 +194,9 @@ class WorkoutTagViewSet(BaseAttrViewSet):
         return queryset.distinct()
 
 
+# ---------------------------------------------------------------------
+# ExerciseViewSet - manages exercises for the authenticated user, including public exercises
+# ---------------------------------------------------------------------
 @extend_schema_view(
     list=extend_schema(
         description="List exercises visible to the authenticated user.",
@@ -279,8 +285,15 @@ class ExerciseViewSet(BaseAttrViewSet):
         else:
             serializer.save(is_public=False)
 
-    @EXERCISE_UPLOAD_IMAGE_SCHEMA
+    # ---------------------------------------------------------------------
+    # Custom action for uploading/replacing exercise images
+    # ---------------------------------------------------------------------
     @action(methods=["POST"], detail=True, url_path="upload-image")
+    @extend_schema(
+        description="Upload or replace image_1 and/or image_2 for a specific exercise.",
+        request=serializers.ExerciseImageSerializer,
+        responses=serializers.ExerciseImageSerializer,
+    )
     def upload_image(self, request, pk=None):
         """Upload or replace an image for an exercise."""
         exercise = self.get_object()
@@ -299,6 +312,9 @@ class ExerciseViewSet(BaseAttrViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+# ---------------------------------------------------------------------
+# ExerciseTagViewSet - manages exercise tags for the authenticated user, including system-defined tags
+# ---------------------------------------------------------------------
 @extend_schema_view(
     list=extend_schema(
         description="List system exercise tags and the authenticated user's custom exercise tags.",
