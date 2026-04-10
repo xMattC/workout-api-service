@@ -261,17 +261,17 @@ docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
 
 ### 4. Create Superuser
 
-Run the following command to create a superuser without interactive prompts:
+Run the following command to create a superuser (non-interactive):
 
 ```bash
 docker-compose run --rm \
-  -e DJANGO_SUPERUSER_EMAIL=admin@workoutapp.com \
+  -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
   -e DJANGO_SUPERUSER_PASSWORD=change-me \
   app python manage.py createsuperuser --noinput
 ```
 
 Example local admin:  
-> Email: admin@workoutapp.com  
+> Email: admin@example.com  
 > Password: change-me  
 > (Local development only)  
 
@@ -282,12 +282,15 @@ docker-compose up
 ```
 ---
 ### Accessing Admin
+
+**Admin URL:** 
 http://localhost:8000/admin/
 
-Login with local admin
+Login using the local admin credentials above.
 
 ### API Documentation
 
+**Swagger docs URL:**
 http://localhost:8000/api/docs/
 
 ### Testing & Linting
