@@ -265,11 +265,15 @@ Run the following command to create a superuser without interactive prompts:
 
 ```bash
 docker-compose run --rm \
-  -e DJANGO_SUPERUSER_USERNAME=admin \
   -e DJANGO_SUPERUSER_EMAIL=admin@workoutapp.com \
-  -e DJANGO_SUPERUSER_PASSWORD=admin123 \
+  -e DJANGO_SUPERUSER_PASSWORD=change-me \
   app python manage.py createsuperuser --noinput
 ```
+
+Example local admin:  
+> Email: admin@workoutapp.com  
+> Password: change-me  
+> (Local development only)  
 
 ### 5. Start Server
 
@@ -280,12 +284,7 @@ docker-compose up
 ### Accessing Admin
 http://localhost:8000/admin/
 
-Login with superuser credentials
-```
-Username: admin
-Email: admin@workoutapp.com
-Password: admin123
-```
+Login with local admin
 
 ### API Documentation
 
