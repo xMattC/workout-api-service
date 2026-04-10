@@ -230,6 +230,15 @@ Permissions are enforced using:
 
 ## 📦 Running Locally
 
+### Prerequisites
+
+Before running this project, ensure you have:
+
+- Git (to clone the repository)
+- Docker & Docker Compose (to run the application)
+
+> If you're using Windows or macOS, install Docker Desktop which includes Docker Compose.
+
 ### 1. Clone Repository
 
 ```bash
@@ -246,26 +255,37 @@ docker-compose run --rm app sh -c "python manage.py migrate"
 ### 3. Seed Data
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py seed_users"
-docker-compose run --rm app sh -c "python manage.py seed_exercises"
+docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
+docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
 ```
 
 ### 4. Create Superuser
 
+Run the following command to create a superuser without interactive prompts:
+
 ```bash
-docker-compose run --rm app sh -c "python manage.py createsuperuser"
+docker-compose run --rm \
+  -e DJANGO_SUPERUSER_USERNAME=admin \
+  -e DJANGO_SUPERUSER_EMAIL=admin@workoutapp.com \
+  -e DJANGO_SUPERUSER_PASSWORD=admin123 \
+  app python manage.py createsuperuser --noinput
 ```
 
 ### 5. Start Server
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py runserver"
+docker-compose up
 ```
 ---
 ### Accessing Admin
 http://localhost:8000/admin/
 
 Login with superuser credentials
+```
+Username: admin
+Email: admin@workoutapp.com
+Password: admin123
+```
 
 ### API Documentation
 
