@@ -162,7 +162,16 @@ Inline editing enables construction of workouts with control over exercise order
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
 
 ---
+## 📊 Architecture Overview
 
+Client → API → Authentication → Application Layer → Database
+
+![Simplified ERD](./docs/images/erd-clean.png)
+
+See full system design and detailed ERD:
+[Workout Architecture](./docs/workout-api-architecture.md)
+
+---
 ## 🧩 Data Modelling
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
@@ -193,13 +202,7 @@ Permissions are enforced using:
 
 ---
 
-## 📊 Architecture Overview
 
-Client → API → Authentication → Business Logic → Database
-
-The API is documented using OpenAPI (Swagger), providing an interface for exploring endpoints and request/response structures.
-
----
 
 ## ⚠️ Validation & Error Handling
 
