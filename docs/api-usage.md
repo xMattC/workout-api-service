@@ -1,6 +1,6 @@
 # API Usage Guide
 
-This document explains how to interact with the Workout API, including authentication, common workflows, and example requests.
+This document outlines common API workflows and example requests for the Workout API.
 
 ---
 
@@ -26,8 +26,8 @@ Request:
 
 ```json
 {
-  "email": "api_demo@workoutapp.com",
-  "password": "DemoPassword123$"
+  "email": "test@example.com",
+  "password": "ExamplePass123!"
 }
 ```
 
@@ -43,18 +43,9 @@ Response:
 
 Include the token in the request header:
 
-```
+```text
 Authorization: Token <your_token>
 ```
-
----
-
-## Demo Account
-
-Use the seeded demo account for testing:
-
-* **Email:** `api_demo@workoutapp.com`
-* **Password:** `DemoPassword123$`
 
 ---
 
@@ -64,14 +55,7 @@ Use the seeded demo account for testing:
 
 `GET /api/user/me/`
 
-Example response:
-
-```json
-{
-  "email": "api_demo@workoutapp.com",
-  "name": "Demo User"
-}
-```
+Returns the authenticated user's profile.
 
 ---
 
@@ -81,12 +65,12 @@ Example response:
 
 Optional filters:
 
-* `?exercises=1,2`
-* `?wo_tags=1,2`
+- `?exercises=1,2`
+- `?wo_tags=1,2`
 
 Examples:
 
-```
+```text
 GET /api/workout/workouts/?exercises=1,2
 GET /api/workout/workouts/?wo_tags=3
 GET /api/workout/workouts/?exercises=1,2&wo_tags=3
@@ -124,9 +108,9 @@ Request:
 
 Notes:
 
-* `wo_tags` is optional
-* `workout_exercises` is optional
-* Nested relationships are replaced on update, not merged
+- `wo_tags` is optional
+- `workout_exercises` is optional
+- Nested relationships are replaced on update, not merged
 
 ---
 
@@ -134,7 +118,7 @@ Notes:
 
 `GET /api/workout/workouts/{id}/`
 
-Returns a fully expanded workout including nested exercise data.
+Returns a workout including nested exercise data.
 
 ---
 
@@ -144,17 +128,17 @@ Returns a fully expanded workout including nested exercise data.
 
 Returns:
 
-* Public exercises
-* User-created exercises
+- Public exercises
+- User-created exercises
 
 Optional filters:
 
-* `?assigned_only=1`
-* `?ex_tags=1,2`
+- `?assigned_only=1`
+- `?ex_tags=1,2`
 
 Examples:
 
-```
+```text
 GET /api/workout/exercises/?assigned_only=1
 GET /api/workout/exercises/?ex_tags=1,2
 ```
@@ -180,8 +164,8 @@ Request:
 
 Notes:
 
-* Normal users create private exercises
-* Only staff users may create public exercises
+- Normal users create private exercises
+- Only staff users may create public exercises
 
 ---
 
@@ -191,8 +175,8 @@ Notes:
 
 Accepted fields:
 
-* `image_1`
-* `image_2`
+- `image_1`
+- `image_2`
 
 Supports partial updates.
 
@@ -205,7 +189,7 @@ Supports partial updates.
 
 Optional filter:
 
-* `?assigned_only=1`
+- `?assigned_only=1`
 
 ---
 
@@ -216,30 +200,9 @@ Optional filter:
 
 Optional filter:
 
-* `?assigned_only=1`
+- `?assigned_only=1`
 
-System tags and user-created tags are returned.
-Only user-owned custom tags can be modified.
-
----
-
-## Swagger Usage
-
-Swagger is available at:
-
-`/api/docs/`
-
-Steps:
-
-1. Open Swagger
-2. Call `POST /api/user/token/`
-3. Copy the returned token
-4. Click **Authorize**
-5. Enter:
-
-```
-Token <your_token>
-```
+Returns system tags and user-created tags. Only user-owned custom tags can be modified.
 
 ---
 
@@ -247,18 +210,16 @@ Token <your_token>
 
 Common responses:
 
-* `400 Bad Request` → Invalid input or credentials
-* `401 Unauthorized` → Missing or invalid token
-* `403 Forbidden` → Attempting to modify restricted resources
+- `400 Bad Request` — invalid input or credentials
+- `401 Unauthorized` — missing or invalid token
+- `403 Forbidden` — attempting to modify restricted resources
 
 ---
 
 ## Permissions Summary
 
-* `POST /api/user/create/` and `POST /api/user/token/` are public
-* All other endpoints require authentication
-* Users can only access their own workouts and workout tags
-* Exercises include public + user-owned private exercises
-* System exercise tags are read-only for non-admin users
-
----
+- `POST /api/user/create/` and `POST /api/user/token/` are public
+- All other endpoints require authentication
+- Users can only access their own workouts and workout tags
+- Exercises include public and user-owned private exercises
+- System exercise tags are read-only for non-admin users

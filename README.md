@@ -1,6 +1,8 @@
 # Workout API Service
 
-A backend API for building and managing structured workout programmes, supporting user-specific data, reusable exercise libraries, and complex workout composition.
+A backend API for managing workouts, exercises, and tagging, built with Django REST Framework.
+
+The project focuses on authenticated, user-scoped data access, relational modelling, and API design. It includes filtering, tagging, and nested workout structures, with a Docker-based development and deployment setup.
 
 ---
 
@@ -8,84 +10,46 @@ A backend API for building and managing structured workout programmes, supportin
 
 This project explores how to design a backend system for structured workout planning, where:
 
-* Users manage personalised workout routines
-* Exercises are reusable across the system
-* Workouts require ordered, configurable components
+- Users manage personalised workout routines
+- Exercises are reusable across the system
+- Workouts require ordered, configurable components
 
 The focus is on backend architecture, data modelling, and API design.
 
----
+
 ## 🚀 Live Demo & API Usage
 
-**Swagger Docs:**
+The application is containerised with Docker and deployed on AWS EC2.
+
+- Docker Compose is used for local development
+- The same containerised setup is used in production
+
+**Deployed Swagger Docs:**
 http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
 
----
+Use the live Swagger UI to explore the API.
 
-### Demo Access
+### Authenticated demo flow
 
-Use the seeded demo account to explore authenticated endpoints with preloaded data:
+To access authenticated endpoints in Swagger:
 
-* **Email:** [api_demo@workoutapp.com](mailto:api_demo@workoutapp.com)
-* **Password:** DemoPassword123$
+#### 1. Create a user
 
----
+Open:
 
-### Step-by-Step Demo Flow
+`POST /api/user/create/`
 
-#### 1. Obtain Authentication Token
-
-In Swagger, open:
-
-`POST /api/user/token/`
-
-Click **"Try it out"**, then enter:
-
-```json
-{
-  "email": "api_demo@workoutapp.com",
-  "password": "DemoPassword123$"
-}
-```
-
-Click **Execute**, then copy the returned token.
-
----
-
-#### 2. Authorise Requests
-
-Click the **Authorize** button in Swagger and enter:
-
-```
-Token <your_token>
-```
-
----
-
-#### 3. Explore the API
-
-Try the following endpoints:
-
-* `GET /api/user/me/` → View your user profile
-* `GET /api/workout/` → View existing workouts
-* `POST /api/workout/` → Create a new workout
-* Add exercises to a workout
-
-This demonstrates authentication, permissions, and relational data handling.
-
-Example: `POST /api/user/create/`
-
-Request:
+Click **Try it out** and submit:
 
 ```json
 {
   "email": "test@example.com",
-  "password": "test123",
+  "password": "ExamplePass123!",
   "name": "Test User"
 }
 ```
 
-Response:
+Example response:
 
 ```json
 {
@@ -95,63 +59,97 @@ Response:
 }
 ```
 
+#### 2. Obtain an authentication token
+
+Open:
+
+`POST /api/user/token/`
+
+Click **Try it out** and submit:
+
+```json
+{
+  "email": "test@example.com",
+  "password": "ExamplePass123!"
+}
+```
+
+Copy the returned token.
+
+#### 3. Authorise requests
+
+Click the **Authorize** button in Swagger and enter:
+
+```text
+Token <your_token>
+```
+
+#### 4. Explore the API
+
+You can then try endpoints such as:
+
+- `GET /api/user/me/` — view your user profile
+- `GET /api/workouts/` — view your workouts
+- `POST /api/workouts/` — create a workout
+- exercise and tag endpoints to test filtering and relationships
+
+This demonstrates token authentication, user-scoped data access, and relational API behaviour.
 
 ---
 
 ## 🧠 Key Features
 
-* Token-based authentication
-* User-scoped data permissions
-* Structured workout composition
-* Fully documented API (Swagger/OpenAPI)
-* Dockerised development environment
+- Token-based authentication (DRF)
+- User-scoped data access (users only access their own resources)
+- Structured workout composition via a relational `WorkoutExercise` model
+- Public and private exercises
+- Tagging system for workouts and exercises
+- Filtering by tags and exercise relationships
+- Image upload support for exercises
+- Docker-based setup with PostgreSQL
+- API schema and interactive documentation via OpenAPI (Swagger)
 
 ---
 
-## 🧩 Data Modelling
 
-A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+## 🧱 Engineering Practices
 
-This is solved using an intermediate model: `Workout → WorkoutExercise → Exercise`
+- Automated testing covering API and model behaviour  
+- Dockerised development environment  
+- Environment configuration via environment variables  
+- Code quality checks using flake8  
+- Modular Django app structure  
 
-This allows:
+### Development Process
 
-* Per-exercise configuration (sets, reps, rest, notes)
-* Ordering of exercises within a workout
-* Reusable exercise library across users
+Development followed a structured workflow:
 
-This structure enables flexible and scalable workout composition.
+- Feature branches for isolated development  
+- Pull requests for code review and integration  
+- GitHub Actions for continuous integration (tests + linting)  
+- Kanban-based task tracking  
 
----
-
-## 🔐 Authentication & Permissions
-
-Authentication is handled using DRF TokenAuthentication.
-
-Permissions are enforced using:
-
-* `IsAuthenticated` for protected routes
-* Querysets filtered by the authenticated user
-* Strict ownership rules preventing access to other users’ data
+Project board:  
+https://github.com/users/xMattC/projects/2
 
 ---
 
 ## 🛠️ Custom Admin Interface
 
-A custom back-office system has been built using Django Admin to manage complex relational workout data efficiently.
+A custom back-office interface is implemented using Django Admin to manage relational workout data.
 
 ### Key Enhancements
 
-* Inline editing of workout exercises
-* Image previews for exercise visualisation
-* Structured workout configuration (sets, reps, rest, notes)
-* Clear organisation of relational data
+- Inline editing of workout exercises
+- Image previews for exercises
+- Structured workout configuration (sets, reps, rest, notes)
+- Clear organisation of relational data
 
 ---
 
 ### Exercise Management
 
-Provides a clear overview of all exercises, including difficulty, visibility, and image previews.
+Provides an overview of exercises, including difficulty, visibility, and image previews.
 
 ![Exercises Admin Interface](./docs/images/admin_exercise_list.png)
 
@@ -159,9 +157,39 @@ Provides a clear overview of all exercises, including difficulty, visibility, an
 
 ### Workout Builder
 
-Custom inline editing enables efficient construction of workouts with full control over exercise order and configuration.
+Inline editing enables construction of workouts with control over exercise order and configuration.
 
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
+
+---
+
+## 🧩 Data Modelling
+
+A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+
+This is solved using an intermediate model:
+
+`Workout → WorkoutExercise → Exercise`
+
+This allows:
+
+- Per-exercise configuration (sets, reps, rest, notes)
+- Ordering of exercises within a workout
+- Reusable exercise library across users
+
+This structure enables flexible workout composition.
+
+---
+
+## 🔐 Authentication & Permissions
+
+Authentication is handled using DRF `TokenAuthentication`.
+
+Permissions are enforced using:
+
+- `IsAuthenticated` for protected routes
+- Querysets filtered by the authenticated user
+- Ownership rules preventing access to other users’ data
 
 ---
 
@@ -169,30 +197,28 @@ Custom inline editing enables efficient construction of workouts with full contr
 
 Client → API → Authentication → Business Logic → Database
 
-The API is fully documented using Swagger/OpenAPI, providing an interactive interface for exploring endpoints and request/response structures.
+The API is documented using OpenAPI (Swagger), providing an interface for exploring endpoints and request/response structures.
 
 ---
 
 ## ⚠️ Validation & Error Handling
 
-* Invalid credentials return HTTP 400
-* Unauthenticated requests return HTTP 401
-* Unauthorized access returns HTTP 403
-* Input validation enforced via DRF serializers
+- Invalid credentials return HTTP 400
+- Unauthenticated requests return HTTP 401
+- Unauthorized access returns HTTP 403
+- Input validation is enforced via DRF serializers
 
 ---
 
-## 🧱 Engineering Practices
 
-Development follows a structured workflow ensuring code quality and reliability:
+## ⚠️ Known Limitations
 
-* **Test-Driven Development (TDD)** – Core functionality built with tests first
-* **Feature Branch Workflow** – Isolated development via pull requests
-* **Continuous Integration (CI)** – GitHub Actions running tests and linting
-* **Dockerised Environment** – Consistent development setup
-* **Environment Configuration** – Managed via environment variables
-* **Code Quality Enforcement** – Linting with flake8
-* **Modular Architecture** – Clear separation of Django apps
+- Uses DRF token authentication; JWT/OAuth flows are not implemented
+- Designed as a portfolio backend service rather than a production-hardened application
+- CI covers basic automated checks only
+- No rate limiting or advanced observability tooling
+- Some workout fields are simplified rather than fully derived
+- Demo environment may be reset or changed without notice
 
 ---
 
@@ -211,7 +237,7 @@ cd workout-api-service
 docker-compose run --rm app sh -c "python manage.py migrate"
 ```
 
-### 3. Seed Demo Data
+### 3. Seed Data
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py seed_users"
@@ -219,44 +245,27 @@ docker-compose run --rm app sh -c "python manage.py seed_exercises"
 ```
 
 ### 4. Create Superuser
-```
+
+```bash
 docker-compose run --rm app sh -c "python manage.py createsuperuser"
 ```
-Follow the prompts to set:
-- Email
-- Password
-
 
 ### 5. Start Server
-```
+
+```bash
 docker-compose run --rm app sh -c "python manage.py runserver"
 ```
-
-### Accessing the Admin Interface
-
-Once the server is running, open:
-
+---
+### Accessing Admin
 http://localhost:8000/admin/
 
-Log in using the **superuser credentials** you created in the previous step.
-
-After logging in, you can:
-- Manage users  
-- View and edit workouts  
-- Explore exercises and relationships  
-- Use the custom admin interface for structured workout management  
-
----
+Login with superuser credentials
 
 ### API Documentation
 
-Swagger docs available at:
-
 http://localhost:8000/api/docs/
 
----
-
-## Testing & Linting
+### Testing & Linting
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py test && flake8"
@@ -264,17 +273,9 @@ docker-compose run --rm app sh -c "python manage.py test && flake8"
 
 ---
 
-## Development Utilities
-
-```bash
-docker-compose run --rm app sh -c "python manage.py shell"
-```
-
----
-
 ## Notes for Reviewers
 
-* Backend-focused project (no frontend)
-* Admin interface is customised but not publicly exposed
-* Demo data is reproducible locally via management commands
-* Designed to reflect production-style backend patterns
+- Backend-focused project (no frontend)
+- Admin interface is customised but not publicly exposed (run locally to verify) 
+- Demo data is reproducible locally via management commands
+- Designed as a portfolio backend system
