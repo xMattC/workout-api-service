@@ -1,7 +1,8 @@
 # Workout API Service
 
-A backend API for building and managing structured workout programmes, supporting user-specific data, reusable exercise libraries, and complex workout composition.
+A backend API for managing workouts, exercises, and tagging, built with Django REST Framework.
 
+The project focuses on authenticated, user-scoped data access, relational modelling, and API design. It includes filtering, tagging, and nested workout structures, with a Docker-based development and deployment setup.
 ---
 
 ## 🎯 Project Goal
@@ -17,7 +18,7 @@ The focus is on backend architecture, data modelling, and API design.
 ---
 ## 🚀 Live Demo & API Usage
 
-**Swagger Docs:**  
+**Swagger Docs:**
 http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
 
 Use the live Swagger UI to explore the API.
@@ -241,10 +242,10 @@ http://localhost:8000/admin/
 Log in using the **superuser credentials** you created in the previous step.
 
 After logging in, you can:
-- Manage users  
-- View and edit workouts  
-- Explore exercises and relationships  
-- Use the custom admin interface for structured workout management  
+- Manage users
+- View and edit workouts
+- Explore exercises and relationships
+- Use the custom admin interface for structured workout management
 
 ---
 
