@@ -89,9 +89,9 @@ Token <your_token>
 You can then try endpoints such as:
 
 - `GET /api/user/me/` — view your user profile
+- `GET /api/workout/exercises/` — view public and private exercises
 - `GET /api/workouts/` — view your workouts
 - `POST /api/workouts/` — create a workout
-- exercise and tag endpoints to test filtering and relationships
 
 This demonstrates token authentication, user-scoped data access, and relational API behaviour.
 
