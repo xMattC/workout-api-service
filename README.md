@@ -111,33 +111,26 @@ This demonstrates token authentication, user-scoped data access, and relational 
 
 ---
 
-## 🧩 Data Modelling
 
-A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+## 🧱 Engineering Practices
 
-This is solved using an intermediate model:
+- Automated testing covering API and model behaviour  
+- Dockerised development environment  
+- Environment configuration via environment variables  
+- Code quality checks using flake8  
+- Modular Django app structure  
 
-`Workout → WorkoutExercise → Exercise`
+### Development Process
 
-This allows:
+Development followed a structured workflow:
 
-- Per-exercise configuration (sets, reps, rest, notes)
-- Ordering of exercises within a workout
-- Reusable exercise library across users
+- Feature branches for isolated development  
+- Pull requests for code review and integration  
+- GitHub Actions for continuous integration (tests + linting)  
+- Kanban-based task tracking  
 
-This structure enables flexible workout composition.
-
----
-
-## 🔐 Authentication & Permissions
-
-Authentication is handled using DRF `TokenAuthentication`.
-
-Permissions are enforced using:
-
-- `IsAuthenticated` for protected routes
-- Querysets filtered by the authenticated user
-- Ownership rules preventing access to other users’ data
+Project board:  
+https://github.com/users/xMattC/projects/2
 
 ---
 
@@ -170,6 +163,36 @@ Inline editing enables construction of workouts with control over exercise order
 
 ---
 
+## 🧩 Data Modelling
+
+A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
+
+This is solved using an intermediate model:
+
+`Workout → WorkoutExercise → Exercise`
+
+This allows:
+
+- Per-exercise configuration (sets, reps, rest, notes)
+- Ordering of exercises within a workout
+- Reusable exercise library across users
+
+This structure enables flexible workout composition.
+
+---
+
+## 🔐 Authentication & Permissions
+
+Authentication is handled using DRF `TokenAuthentication`.
+
+Permissions are enforced using:
+
+- `IsAuthenticated` for protected routes
+- Querysets filtered by the authenticated user
+- Ownership rules preventing access to other users’ data
+
+---
+
 ## 📊 Architecture Overview
 
 Client → API → Authentication → Business Logic → Database
@@ -187,17 +210,6 @@ The API is documented using OpenAPI (Swagger), providing an interface for explor
 
 ---
 
-## 🧱 Engineering Practices
-
-- Automated testing covering API and model behaviour
-- Feature branch workflow using pull requests
-- Continuous Integration (GitHub Actions) running tests and linting
-- Dockerised development environment
-- Environment configuration via environment variables
-- Code quality checks using flake8
-- Modular Django app structure
-
----
 
 ## ⚠️ Known Limitations
 
@@ -225,7 +237,7 @@ cd workout-api-service
 docker-compose run --rm app sh -c "python manage.py migrate"
 ```
 
-### 3. Seed Demo Data
+### 3. Seed Data
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py seed_users"
@@ -243,20 +255,17 @@ docker-compose run --rm app sh -c "python manage.py createsuperuser"
 ```bash
 docker-compose run --rm app sh -c "python manage.py runserver"
 ```
-
+---
 ### Accessing Admin
-
 http://localhost:8000/admin/
 
----
+Login with superuser credentials
 
 ### API Documentation
 
 http://localhost:8000/api/docs/
 
----
-
-## Testing & Linting
+### Testing & Linting
 
 ```bash
 docker-compose run --rm app sh -c "python manage.py test && flake8"
@@ -267,6 +276,6 @@ docker-compose run --rm app sh -c "python manage.py test && flake8"
 ## Notes for Reviewers
 
 - Backend-focused project (no frontend)
-- Admin interface is customised but not publicly exposed
+- Admin interface is customised but not publicly exposed (run locally to verify) 
 - Demo data is reproducible locally via management commands
 - Designed as a portfolio backend system
