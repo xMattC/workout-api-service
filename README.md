@@ -3,6 +3,7 @@
 A backend API for managing workouts, exercises, and tagging, built with Django REST Framework.
 
 The project focuses on authenticated, user-scoped data access, relational modelling, and API design. It includes filtering, tagging, and nested workout structures, with a Docker-based development and deployment setup.
+
 ---
 
 ## 🎯 Project Goal
