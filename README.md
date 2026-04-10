@@ -166,6 +166,7 @@ Inline editing enables construction of workouts with control over exercise order
 
 Client → API → Authentication → Application Layer → Database
 
+High-level domain model showing workouts, exercises, and relationships:
 ![Simplified ERD](./docs/images/erd-clean.png)
 
 See full system design and detailed ERD:
