@@ -89,9 +89,9 @@ Token <your_token>
 You can then try endpoints such as:
 
 - `GET /api/user/me/` — view your user profile
+- `GET /api/workout/exercises/` — view public and private exercises
 - `GET /api/workouts/` — view your workouts
 - `POST /api/workouts/` — create a workout
-- exercise and tag endpoints to test filtering and relationships
 
 This demonstrates token authentication, user-scoped data access, and relational API behaviour.
 
@@ -162,7 +162,19 @@ Inline editing enables construction of workouts with control over exercise order
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
 
 ---
+## 📊 Architecture Overview
 
+Client → API → Authentication → Application Layer → Database
+
+High-level domain model showing workouts, exercises, and relationships:
+
+<img src="./docs/images/erd-clean.png" width="600"/>
+
+
+See full system design and detailed ERD:
+[Workout Architecture](./docs/workout-api-architecture.md)
+
+---
 ## 🧩 Data Modelling
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
@@ -193,13 +205,7 @@ Permissions are enforced using:
 
 ---
 
-## 📊 Architecture Overview
 
-Client → API → Authentication → Business Logic → Database
-
-The API is documented using OpenAPI (Swagger), providing an interface for exploring endpoints and request/response structures.
-
----
 
 ## ⚠️ Validation & Error Handling
 
@@ -224,6 +230,15 @@ The API is documented using OpenAPI (Swagger), providing an interface for explor
 
 ## 📦 Running Locally
 
+### Prerequisites
+
+Before running this project, ensure you have:
+
+- Git (to clone the repository)
+- Docker & Docker Compose (to run the application)
+
+> If you're using Windows or macOS, install Docker Desktop which includes Docker Compose.
+
 ### 1. Clone Repository
 
 ```bash
@@ -240,29 +255,42 @@ docker-compose run --rm app sh -c "python manage.py migrate"
 ### 3. Seed Data
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py seed_users"
-docker-compose run --rm app sh -c "python manage.py seed_exercises"
+docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
+docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
 ```
 
 ### 4. Create Superuser
 
+Run the following command to create a superuser (non-interactive):
+
 ```bash
-docker-compose run --rm app sh -c "python manage.py createsuperuser"
+docker-compose run --rm \
+  -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+  -e DJANGO_SUPERUSER_PASSWORD=change-me \
+  app python manage.py createsuperuser --noinput
 ```
+
+Example local admin:  
+> Email: admin@example.com  
+> Password: change-me  
+> (Local development only)  
 
 ### 5. Start Server
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py runserver"
+docker-compose up
 ```
 ---
 ### Accessing Admin
+
+**Admin URL:** 
 http://localhost:8000/admin/
 
-Login with superuser credentials
+Login using the local admin credentials above.
 
 ### API Documentation
 
+**Swagger docs URL:**
 http://localhost:8000/api/docs/
 
 ### Testing & Linting
