@@ -119,7 +119,9 @@ This demonstrates token authentication, user-scoped data access, and relational 
 - Environment configuration via environment variables  
 - Code quality checks using flake8  
 - Modular Django app structure  
-
+- Test-Driven Development (TDD) applied to core features  
+  _(example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api)_
+  
 ### Development Process
 
 Development followed a structured workflow:
@@ -128,9 +130,7 @@ Development followed a structured workflow:
 - Pull requests for code review and integration  
 - GitHub Actions for continuous integration (tests + linting)  
 - Kanban-based task tracking  
-
-Project board:  
-https://github.com/users/xMattC/projects/2
+  _(Project board: https://github.com/users/xMattC/projects/2)_
 
 ---
 
