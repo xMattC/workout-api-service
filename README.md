@@ -54,8 +54,8 @@ The focus is on backend architecture, data modelling, and API design.
 - Environment configuration via environment variables
 - Code quality checks using flake8
 - Modular Django app structure
-- Test-Driven Development (TDD) applied to core features
-  _(example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api)_
+- Test-Driven Development (TDD) applied to core features:
+  - Example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api
 
 
 
@@ -64,8 +64,8 @@ Development followed a structured workflow:
 - Feature branches for isolated development
 - Pull requests for code review and integration
 - GitHub Actions for continuous integration (tests + linting)
-- Kanban-based task tracking
-  _(Project board: https://github.com/users/xMattC/projects/2)_
+- Kanban-based task tracking:
+  - Project board: https://github.com/users/xMattC/projects/2
 
 ---
 
