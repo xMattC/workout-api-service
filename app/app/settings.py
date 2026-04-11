@@ -170,6 +170,9 @@ Getting started:
 1. Register a user
 2. Log in to get a token
 3. Create workouts and add exercises
+
+---
+Built by xMattC
 """,
     'VERSION': '1.0.0',
 }
