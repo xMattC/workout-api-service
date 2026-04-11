@@ -156,6 +156,26 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 25,
 }
 
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Workout API Platform',
+    'DESCRIPTION': """
+A RESTful API for managing workouts, exercises, and user fitness data.
+
+Features:
+- User authentication
+- Workout and exercise management
+- Scalable structure for fitness applications
+
+Getting started:
+1. Register a user
+2. Log in to get a token
+3. Create workouts and add exercises
+
+---
+Built by xMattC
+""",
+    'VERSION': '1.0.0',
+}
 
 LOGGING = {
     "version": 1,
