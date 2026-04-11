@@ -47,25 +47,36 @@ The focus is on backend architecture, data modelling, and API design.
 ---
 
 
-## 🧱 Architecture & Engineering
+## 🧱 Engineering Practices
 
-- Automated testing covering API and model behaviour
-- Dockerised development environment
-- Environment configuration via environment variables
-- Code quality checks using flake8
-- Modular Django app structure
-- Test-Driven Development (TDD) applied to core features:
-  - Example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api
+- Automated testing covering API and model behaviour  
+- Dockerised development environment  
+- Environment configuration via environment variables  
+- Code quality checks using flake8  
+- Modular Django app structure  
+- Test-Driven Development (TDD) applied to core features  
+  - [Example commit history](https://github.com/xMattC/workout-api-service/commits/feature/workout_api)
 
+### Development Workflow
 
+- Feature branches for isolated development  
+- Pull requests for code review and integration  
+- GitHub Actions for continuous integration (tests + linting)  
+- Kanban-based task tracking  
+  - [Project board](https://github.com/users/xMattC/projects/2)
 
-Development followed a structured workflow:
+---
 
-- Feature branches for isolated development
-- Pull requests for code review and integration
-- GitHub Actions for continuous integration (tests + linting)
-- Kanban-based task tracking:
-  - Project board: https://github.com/users/xMattC/projects/2
+## 📊 System Architecture
+
+Client → API → Authentication → Application Layer → Database
+
+High-level domain model showing workouts, exercises, and relationships:
+
+<img src="./docs/images/erd-clean.png" width="600"/>
+
+See full system design and detailed ERD:
+[Workout Architecture](./docs/workout-api-architecture.md)
 
 ---
 
@@ -95,19 +106,7 @@ Inline editing enables construction of workouts with control over exercise order
 ![Workout Admin Interface](./docs/images/admin_workout_inline.png)
 
 ---
-## 📊 Architecture Overview
 
-Client → API → Authentication → Application Layer → Database
-
-High-level domain model showing workouts, exercises, and relationships:
-
-<img src="./docs/images/erd-clean.png" width="600"/>
-
-
-See full system design and detailed ERD:
-[Workout Architecture](./docs/workout-api-architecture.md)
-
----
 ##  📈 Data Modelling
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
@@ -188,8 +187,8 @@ docker-compose run --rm app sh -c "python manage.py migrate"
 ### 3. Seed Data
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
 docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
+docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
 ```
 
 ### 4. Create Superuser
