@@ -187,8 +187,8 @@ docker-compose run --rm app sh -c "python manage.py migrate"
 ### 3. Seed Data
 
 ```bash
-docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
 docker-compose run --rm app sh -c "python manage.py seed_exercise_data"
+docker-compose run --rm app sh -c "python manage.py seed_user_workout_data"
 ```
 
 ### 4. Create Superuser
