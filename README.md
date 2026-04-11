@@ -204,8 +204,8 @@ docker-compose run --rm \
 ```
 
 Example local admin:
-> Email: admin@example.com
-> Password: change-me
+> Email: admin@example.com<br>
+> Password: change-me<br>
 > (Local development only)
 
 ### 5. Start Server
