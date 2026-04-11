@@ -161,15 +161,33 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': """
 A RESTful API for managing workouts, exercises, and user fitness data.
 
-Features:
+### Features
 - User authentication
 - Workout and exercise management
 - Scalable structure for fitness applications
 
-Getting started:
-1. Register a user
-2. Log in to get a token
-3. Create workouts and add exercises
+---
+
+### Quick Demo Flow
+
+1. Create a user:
+   `POST /api/user/create/`
+
+2. Obtain a token:
+   `POST /api/user/token/`
+
+3. Authorise in Swagger:
+    `Authorize --> tokenAuth (apiKey) --> value: Token <your_token>`
+
+4. Try protected endpoints:
+   - `GET /api/user/me/`
+
+   - `GET /api/workout/exercises/`
+
+   - `GET /api/workouts/`
+
+   - `POST /api/workouts/`
+
 
 ---
 Built by xMattC

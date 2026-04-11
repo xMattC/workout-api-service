@@ -1,8 +1,12 @@
 # Workout API Service
 
-A backend API for managing workouts, exercises, and tagging, built with Django REST Framework.
+A production-style Django REST API for managing workouts, exercises, and user-scoped fitness data.
 
-The project focuses on authenticated, user-scoped data access, relational modelling, and API design. It includes filtering, tagging, and nested workout structures, with a Docker-based development and deployment setup.
+The system supports relational workout structures, reusable exercises, tagging, and filtering, with a focus on clean API design and scalable backend architecture.
+
+The application is fully containerised with Docker and deployed on AWS EC2.
+
+**Live API (Swagger Docs):** http://workoutapp.xmattc.com/api/docs/
 
 ---
 
@@ -17,87 +21,18 @@ This project explores how to design a backend system for structured workout plan
 The focus is on backend architecture, data modelling, and API design.
 
 
-## 🚀 Live Demo & API Usage
+---
+## 🛠️ Tech Stack
 
-The application is containerised with Docker and deployed on AWS EC2.
 
-- Docker Compose is used for local development
-- The same containerised setup is used in production
-
-**Deployed Swagger Docs:**
-http://workoutapp.xmattc.com/api/docs/
-
-Use the live Swagger UI to explore the API.
-
-### Authenticated demo flow
-
-To access authenticated endpoints in Swagger:
-
-#### 1. Create a user
-
-Open:
-
-`POST /api/user/create/`
-
-Click **Try it out** and submit:
-
-```json
-{
-  "email": "test@example.com",
-  "password": "ExamplePass123!",
-  "name": "Test User"
-}
-```
-
-Example response:
-
-```json
-{
-  "id": 1,
-  "email": "test@example.com",
-  "name": "Test User"
-}
-```
-
-#### 2. Obtain an authentication token
-
-Open:
-
-`POST /api/user/token/`
-
-Click **Try it out** and submit:
-
-```json
-{
-  "email": "test@example.com",
-  "password": "ExamplePass123!"
-}
-```
-
-Copy the returned token.
-
-#### 3. Authorise requests
-
-Click the **Authorize** button in Swagger and enter:
-
-```text
-Token <your_token>
-```
-
-#### 4. Explore the API
-
-You can then try endpoints such as:
-
-- `GET /api/user/me/` — view your user profile
-- `GET /api/workout/exercises/` — view public and private exercises
-- `GET /api/workouts/` — view your workouts
-- `POST /api/workouts/` — create a workout
-
-This demonstrates token authentication, user-scoped data access, and relational API behaviour.
+- **Backend:** Python (Django, Django REST Framework)
+- **Database:** PostgreSQL
+- **Infrastructure:** Docker, Docker Compose, AWS EC2, Nginx (reverse proxy)
+- **API Documentation:** OpenAPI / Swagger (drf-spectacular)
 
 ---
 
-## 🧠 Key Features
+## 🔑 Key Features
 
 - Token-based authentication (DRF)
 - User-scoped data access (users only access their own resources)
@@ -112,7 +47,7 @@ This demonstrates token authentication, user-scoped data access, and relational 
 ---
 
 
-## 🧱 Engineering Practices
+## 🧱 Architecture & Engineering
 
 - Automated testing covering API and model behaviour
 - Dockerised development environment
@@ -122,7 +57,7 @@ This demonstrates token authentication, user-scoped data access, and relational 
 - Test-Driven Development (TDD) applied to core features
   _(example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api)_
 
-### Development Process
+
 
 Development followed a structured workflow:
 
@@ -134,7 +69,7 @@ Development followed a structured workflow:
 
 ---
 
-## 🛠️ Custom Admin Interface
+## 💻 Custom Admin Interface
 
 A custom back-office interface is implemented using Django Admin to manage relational workout data.
 
@@ -145,7 +80,6 @@ A custom back-office interface is implemented using Django Admin to manage relat
 - Structured workout configuration (sets, reps, rest, notes)
 - Clear organisation of relational data
 
----
 
 ### Exercise Management
 
@@ -153,7 +87,6 @@ Provides an overview of exercises, including difficulty, visibility, and image p
 
 ![Exercises Admin Interface](./docs/images/admin_exercise_list.png)
 
----
 
 ### Workout Builder
 
@@ -175,7 +108,7 @@ See full system design and detailed ERD:
 [Workout Architecture](./docs/workout-api-architecture.md)
 
 ---
-## 🧩 Data Modelling
+##  📈 Data Modelling
 
 A key challenge in this project was modelling workouts composed of multiple exercises with additional metadata.
 
@@ -217,7 +150,7 @@ Permissions are enforced using:
 ---
 
 
-## ⚠️ Known Limitations
+## ⚙️ Known Limitations
 
 - Uses DRF token authentication; JWT/OAuth flows are not implemented
 - Designed as a portfolio backend service rather than a production-hardened application
