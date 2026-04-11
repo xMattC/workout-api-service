@@ -25,7 +25,7 @@ The application is containerised with Docker and deployed on AWS EC2.
 - The same containerised setup is used in production
 
 **Deployed Swagger Docs:**
-http://ec2-16-16-202-64.eu-north-1.compute.amazonaws.com/api/docs/
+http://workoutapp.xmattc.com/api/docs/
 
 Use the live Swagger UI to explore the API.
 
@@ -114,22 +114,22 @@ This demonstrates token authentication, user-scoped data access, and relational 
 
 ## 🧱 Engineering Practices
 
-- Automated testing covering API and model behaviour  
-- Dockerised development environment  
-- Environment configuration via environment variables  
-- Code quality checks using flake8  
-- Modular Django app structure  
-- Test-Driven Development (TDD) applied to core features  
+- Automated testing covering API and model behaviour
+- Dockerised development environment
+- Environment configuration via environment variables
+- Code quality checks using flake8
+- Modular Django app structure
+- Test-Driven Development (TDD) applied to core features
   _(example commit history: https://github.com/xMattC/workout-api-service/commits/feature/workout_api)_
-  
+
 ### Development Process
 
 Development followed a structured workflow:
 
-- Feature branches for isolated development  
-- Pull requests for code review and integration  
-- GitHub Actions for continuous integration (tests + linting)  
-- Kanban-based task tracking  
+- Feature branches for isolated development
+- Pull requests for code review and integration
+- GitHub Actions for continuous integration (tests + linting)
+- Kanban-based task tracking
   _(Project board: https://github.com/users/xMattC/projects/2)_
 
 ---
@@ -270,10 +270,10 @@ docker-compose run --rm \
   app python manage.py createsuperuser --noinput
 ```
 
-Example local admin:  
-> Email: admin@example.com  
-> Password: change-me  
-> (Local development only)  
+Example local admin:
+> Email: admin@example.com
+> Password: change-me
+> (Local development only)
 
 ### 5. Start Server
 
@@ -283,7 +283,7 @@ docker-compose up
 ---
 ### Accessing Admin
 
-**Admin URL:** 
+**Admin URL:**
 http://localhost:8000/admin/
 
 Login using the local admin credentials above.
@@ -304,6 +304,6 @@ docker-compose run --rm app sh -c "python manage.py test && flake8"
 ## Notes for Reviewers
 
 - Backend-focused project (no frontend)
-- Admin interface is customised but not publicly exposed (run locally to verify) 
+- Admin interface is customised but not publicly exposed (run locally to verify)
 - Demo data is reproducible locally via management commands
 - Designed as a portfolio backend system
